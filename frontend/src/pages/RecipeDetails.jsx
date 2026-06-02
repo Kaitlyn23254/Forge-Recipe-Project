@@ -1,9 +1,43 @@
+import { useState } from "react";
+import axios from "axios";
 import IngredientsList from "../components/IngredientsList";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 
 import "../styles/RecipeDetails.css";
+import CommentSection from "../components/CommentSection";
+
+const userId = "X7CtVm0P6YeWybH4ZL75";
+const recipeId = "4mHCcLEftQemlwQ2Zydn";
+const commentRating = "3";
 
 export default function RecipeDetails() {
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/comments`,
+        {
+          recipeId,
+          userId,
+          text: commentText,
+          rating: commentRating,
+        },
+      );
+
+      console.log("Response is: ", response);
+
+      const newComment = response.data;
+      setComments((prevComments) => [...prevComments, newComment]);
+      setCommentText("");
+    } catch (err) {
+      console.log("Error posting comment: ", err);
+    }
+  };
+
   const recipeImageUrl = "";
   const recipeTitle = "Eggs and Ham";
   const recipeTags = "Meat, eggs, breakfast";
@@ -45,6 +79,14 @@ export default function RecipeDetails() {
             ))}
           </ol>
         </div>
+        <CommentSection
+          commentText={commentText}
+          setCommentText={setCommentText}
+          handleSubmit={handleSubmit}
+        />
+        {comments.map((c) => (
+          <p>{c.text}</p>
+        ))}
       </div>
 
       <div className="recipe-details-right">
