@@ -1,4 +1,5 @@
 import IngredientsList from "../components/IngredientsList";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 
 const mockIngredients = [
   { ingredient: "carrot", measurement: "3.4 cup" },
@@ -8,5 +9,23 @@ const mockIngredients = [
 ];
 
 export default function RecipeDetails() {
-  return <IngredientsList ingredients={mockIngredients} />;
+  const recipeImageUrl = "";
+  const recipeTitle = "Eggs and Ham";
+  const recipeTags = "Meat, eggs, breakfast";
+
+  return (
+    <div className="recipe-details">
+      <div className="recipe-details-header">
+        <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
+        <div className="recipe-details-header-text">
+          <div className="recipe-details-header-title-row">
+            <h1 className="recipe-details-title">{recipeTitle}</h1>
+            <BookmarkBorderIcon />
+          </div>
+          <h4 className="recipe-details-tags">{recipeTags}</h4>
+        </div>
+      </div>
+      <IngredientsList ingredients={mockIngredients} />
+    </div>
+  );
 }
