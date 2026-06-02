@@ -1,6 +1,8 @@
 import IngredientsList from "../components/IngredientsList";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 
+import "../styles/RecipeDetails.css";
+
 const mockIngredients = [
   { ingredient: "carrot", measurement: "3.4 cup" },
   { ingredient: "onion", measurement: "1 large" },

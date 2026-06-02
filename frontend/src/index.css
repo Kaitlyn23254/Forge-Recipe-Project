@@ -1,37 +1,3 @@
 body {
   margin: 0;
 }
-
-.recipe-details-header {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.recipe-details-header img {
-  display: block;
-  width: 8rem;
-  height: 8rem;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.recipe-details-header-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.recipe-details-header-title-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.recipe-details-title {
-  margin: 0;
-}
-
-.recipe-details-tags {
-  margin: 0.35rem 0 0;
-}
