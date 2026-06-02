@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import IngredientsList from "../components/IngredientsList";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import { timestampToString } from "../utility/timestampToString";
 
 import "../styles/RecipeDetails.css";
 import CommentSection from "../components/CommentSection";
+import Comment from "../components/Comment";
 
 const userId = "X7CtVm0P6YeWybH4ZL75";
 const recipeId = "4mHCcLEftQemlwQ2Zydn";
 const commentRating = "3";
+const username = "johnbob";
 
 export default function RecipeDetails() {
   const [comments, setComments] = useState([]);
@@ -28,8 +31,6 @@ export default function RecipeDetails() {
         },
       );
 
-      console.log("Response is: ", response);
-
       const newComment = response.data;
       setComments((prevComments) => [...prevComments, newComment]);
       setCommentText("");
@@ -38,7 +39,25 @@ export default function RecipeDetails() {
     }
   };
 
-  const recipeImageUrl = "";
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
+        );
+
+        console.log("Response useEffect data is: ", response.data);
+
+        setComments(response.data);
+      } catch (err) {
+        console.error("Error fetching comments: ", err);
+      }
+    };
+
+    fetchComments();
+  }, []);
+
+  const recipeImageUrl = null;
   const recipeTitle = "Eggs and Ham";
   const recipeTags = "Meat, eggs, breakfast";
   const recipeInstructions = [
@@ -59,7 +78,9 @@ export default function RecipeDetails() {
     <div className="recipe-details">
       <div className="recipe-details-left">
         <div className="recipe-details-header">
-          <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
+          {recipeImageUrl ? (
+            <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
+          ) : null}
           <div className="recipe-details-header-text">
             <div className="recipe-details-header-title-row">
               <h1 className="recipe-details-title">{recipeTitle}</h1>
@@ -73,9 +94,7 @@ export default function RecipeDetails() {
           <h2 className="recipe-details-instructions-title">Instructions</h2>
           <ol>
             {recipeInstructions.map((instruction, idx) => (
-              <li key={instruction - `${instruction.length}` - `${idx}`}>
-                {instruction}
-              </li>
+              <li key={`${idx}-${instruction}`}>{instruction}</li>
             ))}
           </ol>
         </div>
@@ -85,7 +104,13 @@ export default function RecipeDetails() {
           handleSubmit={handleSubmit}
         />
         {comments.map((c) => (
-          <p>{c.text}</p>
+          <Comment
+            key={c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`}
+            username={username}
+            text={c.text}
+            numLikes={c.likeCount}
+            createdAt={timestampToString(c.createdAt)}
+          />
         ))}
       </div>
 
