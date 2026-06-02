@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router";
 import Recipes from "./pages/Recipes.jsx";
 import RecipeDetails from "./pages/RecipeDetails.jsx";
 import MyRecipes from "./pages/MyRecipes.jsx";
@@ -14,22 +14,26 @@ import Login from "./pages/Login.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
-    Element: <App />,
+    element: <App />,
     children: [
       {
         index: true,
         element: <Home />,
       },
       {
-        path: "/recipes",
+        path: "recipes",
         element: <Recipes />,
       },
       {
-        path: "/recipe-details",
+        path: "recipes/:recipeId",
+        element: <Recipes />,
+      },
+      {
+        path: "recipe-details",
         element: <RecipeDetails />,
       },
       {
-        path: "/my-recipes",
+        path: "my-recipes",
         element: <MyRecipes />,
       },
       {
