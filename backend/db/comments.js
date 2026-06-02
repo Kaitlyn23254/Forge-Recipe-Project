@@ -49,7 +49,7 @@ async function getCommentsByRecipeId(recipeId) {
   );
 
   // Sort by descending likes
-  withLikes.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+  withLikes.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
 
   return withLikes;
 }
