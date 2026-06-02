@@ -57,6 +57,33 @@ export default function RecipeDetails() {
     fetchComments();
   }, []);
 
+  const handleCommentLike = async (commentId) => {
+    try {
+      const postResp = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/like`,
+        { userId },
+      );
+
+      const updatedLikes = postResp?.data?.likes;
+
+      setComments((prevComments) =>
+        prevComments.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                likeCount:
+                  typeof updatedLikes === "number"
+                    ? updatedLikes
+                    : (c.likeCount || 0) + 1,
+              }
+            : c,
+        ),
+      );
+    } catch (err) {
+      console.log("Error getting response: ", err);
+    }
+  };
+
   const recipeImageUrl = null;
   const recipeTitle = "Eggs and Ham";
   const recipeTags = "Meat, eggs, breakfast";
@@ -106,10 +133,12 @@ export default function RecipeDetails() {
         {comments.map((c) => (
           <Comment
             key={c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`}
+            id={c.id}
             username={username}
             text={c.text}
             numLikes={c.likeCount}
             createdAt={timestampToString(c.createdAt)}
+            handleCommentLike={handleCommentLike}
           />
         ))}
       </div>
