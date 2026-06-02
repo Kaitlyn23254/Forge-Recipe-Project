@@ -14,7 +14,6 @@ export default function IngredientsList({ ingredients }) {
         flexDirection: "column",
         alignItems: "center",
         width: "fit-content",
-        margin: "0 auto",
       }}
     >
       <h2 className="ingredients-title">Ingredients</h2>
