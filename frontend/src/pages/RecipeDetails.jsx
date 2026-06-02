@@ -23,28 +23,33 @@ export default function RecipeDetails() {
 
   return (
     <div className="recipe-details">
-      <div className="recipe-details-header">
-        <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
-        <div className="recipe-details-header-text">
-          <div className="recipe-details-header-title-row">
-            <h1 className="recipe-details-title">{recipeTitle}</h1>
-            <BookmarkBorderIcon />
+      <div className="recipe-details-left">
+        <div className="recipe-details-header">
+          <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
+          <div className="recipe-details-header-text">
+            <div className="recipe-details-header-title-row">
+              <h1 className="recipe-details-title">{recipeTitle}</h1>
+              <BookmarkBorderIcon />
+            </div>
+            <h4 className="recipe-details-tags">{recipeTags}</h4>
           </div>
-          <h4 className="recipe-details-tags">{recipeTags}</h4>
+        </div>
+
+        <div className="recipe-details-instructions-container">
+          <h2 className="recipe-details-instructions-title">Instructions</h2>
+          <ol>
+            {recipeInstructions.map((instruction, idx) => (
+              <li key={instruction - `${instruction.length}` - `${idx}`}>
+                {instruction}
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
 
-      <div className="recipe-details-instructions-container">
-        <h2 className="recipe-details-instructions-title">Instructions</h2>
-        <ol>
-          {recipeInstructions.map((instruction, idx) => (
-            <li key={instruction - `${instruction.length}` - `${idx}`}>
-              {instruction}
-            </li>
-          ))}
-        </ol>
+      <div className="recipe-details-right">
+        <IngredientsList ingredients={mockIngredients} />
       </div>
-      <IngredientsList ingredients={mockIngredients} />
     </div>
   );
 }
