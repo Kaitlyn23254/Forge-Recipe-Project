@@ -3,6 +3,8 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import { timestampToString } from "../utility/timestampToString";
 import { useState } from "react";
 
+import "./styles/Comment.css";
+
 export default function Reply({
   id,
   username,
@@ -52,9 +54,15 @@ export default function Reply({
           <p className="reply-body">{text}</p>
           <div className="reply-footer">
             {likedByUser ? (
-              <ThumbUpIcon onClick={() => handleReplyLike(id)} />
+              <ThumbUpIcon
+                className="comment-footer__icon"
+                onClick={() => handleReplyLike(id)}
+              />
             ) : (
-              <ThumbUpOffAltIcon onClick={() => handleReplyLike(id)} />
+              <ThumbUpOffAltIcon
+                className="comment-footer__icon"
+                onClick={() => handleReplyLike(id)}
+              />
             )}
             <span>{numLikes}</span>
             {isOwn ? (
