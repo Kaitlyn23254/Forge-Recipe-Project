@@ -32,6 +32,10 @@
   flex-shrink: 0;
 }
 
+.recipe-details-header svg {
+  cursor: pointer;
+}
+
 .recipe-details-header-text {
   display: flex;
   flex-direction: column;

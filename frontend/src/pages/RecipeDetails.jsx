@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import IngredientsList from "../components/IngredientsList";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import { timestampToString } from "../utility/timestampToString";
 
@@ -10,12 +11,14 @@ import Comment from "../components/Comment";
 
 const userId = "X7CtVm0P6YeWybH4ZL75";
 const recipeId = "4mHCcLEftQemlwQ2Zydn";
+const recipeType = "community";
 const commentRating = "3";
 const username = "johnbob";
 
 export default function RecipeDetails() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
 
   const loadRepliesForComment = async (commentId) => {
     const response = await axios.get(
@@ -71,6 +74,23 @@ export default function RecipeDetails() {
     fetchCommentsWithReplies().catch((err) => {
       console.error("Error fetching comments: ", err);
     });
+  }, []);
+
+  useEffect(() => {
+    async function fetchSavedStatus() {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/saved-recipes/${recipeId}`,
+          { params: { userId } },
+        );
+
+        setIsSaved(Boolean(response.data?.recipeId));
+      } catch (err) {
+        console.error("Error fetching saved recipe status: ", err);
+      }
+    }
+
+    fetchSavedStatus();
   }, []);
 
   const handleReplySubmit = async (commentId, text) => {
@@ -187,6 +207,23 @@ export default function RecipeDetails() {
     }
   };
 
+  const handleSaveRecipe = async () => {
+    const previousSaved = isSaved;
+    setIsSaved(!previousSaved);
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/saved-recipes/save/${recipeId}`,
+        { userId, recipeType },
+      );
+
+      setIsSaved(response.data.saved);
+    } catch (err) {
+      setIsSaved(previousSaved);
+      console.log("Error saving recipe: ", err);
+    }
+  };
+
   const recipeImageUrl = null;
   const recipeTitle = "Eggs and Ham";
   const recipeTags = "Meat, eggs, breakfast";
@@ -214,7 +251,21 @@ export default function RecipeDetails() {
           <div className="recipe-details-header-text">
             <div className="recipe-details-header-title-row">
               <h1 className="recipe-details-title">{recipeTitle}</h1>
-              <BookmarkBorderIcon />
+              {isSaved ? (
+                <BookmarkIcon
+                  className="recipe-details-save-icon"
+                  onClick={handleSaveRecipe}
+                  role="button"
+                  aria-label="Remove saved recipe"
+                />
+              ) : (
+                <BookmarkBorderIcon
+                  className="recipe-details-save-icon"
+                  onClick={handleSaveRecipe}
+                  role="button"
+                  aria-label="Save recipe"
+                />
+              )}
             </div>
             <h4 className="recipe-details-tags">{recipeTags}</h4>
           </div>
@@ -261,7 +312,9 @@ export default function RecipeDetails() {
 
                 setComments((prevComments) =>
                   prevComments.map((comment) =>
-                    comment.id === commentId ? { ...comment, ...updated } : comment,
+                    comment.id === commentId
+                      ? { ...comment, ...updated }
+                      : comment,
                   ),
                 );
               } catch (err) {
@@ -275,7 +328,9 @@ export default function RecipeDetails() {
                   { data: { userId } },
                 );
 
-                setComments((prevComments) => prevComments.filter((c) => c.id !== commentId));
+                setComments((prevComments) =>
+                  prevComments.filter((c) => c.id !== commentId),
+                );
               } catch (err) {
                 console.log("Error deleting comment: ", err);
               }
