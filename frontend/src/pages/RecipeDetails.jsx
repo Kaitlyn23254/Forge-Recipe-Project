@@ -8,6 +8,7 @@ import { timestampToString } from "../utility/timestampToString";
 import "../styles/RecipeDetails.css";
 import CommentSection from "../components/CommentSection";
 import Comment from "../components/Comment";
+import ChatBox from "../components/ChatBox";
 
 const userId = "X7CtVm0P6YeWybH4ZL75";
 const recipeId = "4mHCcLEftQemlwQ2Zydn";
@@ -341,6 +342,11 @@ export default function RecipeDetails() {
 
       <div className="recipe-details-right">
         <IngredientsList ingredients={mockIngredients} />
+        <ChatBox
+          recipeTitle={recipeTitle}
+          recipeInstructions={recipeInstructions}
+          recipeIngredients={mockIngredients}
+        />
       </div>
     </div>
   );
