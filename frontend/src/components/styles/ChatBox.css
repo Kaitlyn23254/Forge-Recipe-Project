@@ -1,0 +1,99 @@
+.chat-box.recipe-details-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 320px;
+  margin-bottom: 0;
+}
+
+.chat-box__title {
+  margin: 0 0 16px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #2f2418;
+  font-size: 1.35rem;
+}
+
+.chat-box__messages {
+  flex: 1;
+  min-height: 180px;
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px 16px;
+  margin-bottom: 16px;
+}
+
+.chat-box__form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: auto;
+}
+
+.chat-box__input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(58, 152, 185, 0.18);
+  border-radius: 999px;
+  padding: 12px 16px;
+  background-color: #fff7ea;
+  color: #2f2418;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.chat-box__input:focus {
+  border-color: #3a98b9;
+}
+
+.chat-box__send {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  background: #3a98b9;
+  cursor: pointer;
+}
+
+.chat-box__send:hover {
+  background: #2f98b9;
+}
+
+.chat-message {
+  display: flex;
+  width: 100%;
+}
+
+.chat-message--user {
+  justify-content: flex-end;
+}
+
+.chat-message--assistant {
+  justify-content: flex-start;
+}
+
+.chat-message__content {
+  margin: 0;
+  max-width: 85%;
+  padding: 12px 16px;
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.chat-message--assistant .chat-message__content {
+  color: #2f2418;
+  background: rgba(232, 213, 196, 0.45);
+  border-radius: 18px 18px 18px 4px;
+}
+
+.chat-message--user .chat-message__content {
+  color: #fff;
+  background: #3a98b9;
+  border-radius: 18px 18px 4px 18px;
+}

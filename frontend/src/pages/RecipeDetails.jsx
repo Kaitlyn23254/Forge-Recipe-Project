@@ -243,110 +243,118 @@ export default function RecipeDetails() {
   ];
 
   return (
-    <div className="recipe-details">
-      <div className="recipe-details-left">
-        <div className="recipe-details-header">
-          {recipeImageUrl ? (
-            <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
-          ) : null}
-          <div className="recipe-details-header-text">
-            <div className="recipe-details-header-title-row">
-              <h1 className="recipe-details-title">{recipeTitle}</h1>
-              {isSaved ? (
-                <BookmarkIcon
-                  className="recipe-details-save-icon"
-                  onClick={handleSaveRecipe}
-                  role="button"
-                  aria-label="Remove saved recipe"
-                />
-              ) : (
-                <BookmarkBorderIcon
-                  className="recipe-details-save-icon"
-                  onClick={handleSaveRecipe}
-                  role="button"
-                  aria-label="Save recipe"
-                />
-              )}
+    <div className="recipe-details-page">
+      <div className="recipe-details-page__inner">
+        <div className="recipe-details">
+          <div className="recipe-details-header">
+            {recipeImageUrl ? (
+              <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
+            ) : null}
+            <div className="recipe-details-header-text">
+              <div className="recipe-details-header-title-row">
+                <h1 className="recipe-details-title">{recipeTitle}</h1>
+                {isSaved ? (
+                  <BookmarkIcon
+                    className="recipe-details-save-icon"
+                    onClick={handleSaveRecipe}
+                    role="button"
+                    aria-label="Remove saved recipe"
+                  />
+                ) : (
+                  <BookmarkBorderIcon
+                    className="recipe-details-save-icon"
+                    onClick={handleSaveRecipe}
+                    role="button"
+                    aria-label="Save recipe"
+                  />
+                )}
+              </div>
+              <h4 className="recipe-details-tags">{recipeTags}</h4>
             </div>
-            <h4 className="recipe-details-tags">{recipeTags}</h4>
+          </div>
+
+          <div className="recipe-details-content">
+            <div className="recipe-details-content-left">
+              <div className="recipe-details-panel recipe-details-instructions">
+                <h2 className="recipe-details-panel__title">Instructions</h2>
+                <ol className="recipe-details-instructions__list">
+                  {recipeInstructions.map((instruction, idx) => (
+                    <li key={`${idx}-${instruction}`}>{instruction}</li>
+                  ))}
+                </ol>
+              </div>
+              <CommentSection
+                commentText={commentText}
+                setCommentText={setCommentText}
+                handleSubmit={handleSubmit}
+              />
+              <div className="recipe-details-comments">
+                {comments.map((c) => (
+                  <Comment
+                    key={c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`}
+                    id={c.id}
+                    username={username}
+                    text={c.text}
+                    numLikes={c.likeCount}
+                    likedByUser={c.likedByUser ?? false}
+                    createdAt={timestampToString(c.createdAt)}
+                    handleCommentLike={handleCommentLike}
+                    replies={c.replies ?? []}
+                    onReplySubmit={handleReplySubmit}
+                    onReplyLike={handleReplyLike}
+                    onReplyEdit={handleReplyEdit}
+                    onReplyDelete={handleReplyDelete}
+                    currentUserId={userId}
+                    commentUserId={c.userId}
+                    onCommentEdit={async (commentId, newText) => {
+                      try {
+                        const resp = await axios.patch(
+                          `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                          { userId, text: newText },
+                        );
+
+                        const updated = resp?.data;
+
+                        setComments((prevComments) =>
+                          prevComments.map((comment) =>
+                            comment.id === commentId
+                              ? { ...comment, ...updated }
+                              : comment,
+                          ),
+                        );
+                      } catch (err) {
+                        console.log("Error editing comment: ", err);
+                      }
+                    }}
+                    onCommentDelete={async (commentId) => {
+                      try {
+                        await axios.delete(
+                          `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                          { data: { userId } },
+                        );
+
+                        setComments((prevComments) =>
+                          prevComments.filter((c) => c.id !== commentId),
+                        );
+                      } catch (err) {
+                        console.log("Error deleting comment: ", err);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="recipe-details-content-right">
+              <IngredientsList ingredients={mockIngredients} />
+              <ChatBox
+                recipeTitle={recipeTitle}
+                recipeInstructions={recipeInstructions}
+                recipeIngredients={mockIngredients}
+              />
+            </div>
           </div>
         </div>
-
-        <div className="recipe-details-instructions-container">
-          <h2 className="recipe-details-instructions-title">Instructions</h2>
-          <ol>
-            {recipeInstructions.map((instruction, idx) => (
-              <li key={`${idx}-${instruction}`}>{instruction}</li>
-            ))}
-          </ol>
-        </div>
-        <CommentSection
-          commentText={commentText}
-          setCommentText={setCommentText}
-          handleSubmit={handleSubmit}
-        />
-        {comments.map((c) => (
-          <Comment
-            key={c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`}
-            id={c.id}
-            username={username}
-            text={c.text}
-            numLikes={c.likeCount}
-            likedByUser={c.likedByUser ?? false}
-            createdAt={timestampToString(c.createdAt)}
-            handleCommentLike={handleCommentLike}
-            replies={c.replies ?? []}
-            onReplySubmit={handleReplySubmit}
-            onReplyLike={handleReplyLike}
-            onReplyEdit={handleReplyEdit}
-            onReplyDelete={handleReplyDelete}
-            currentUserId={userId}
-            commentUserId={c.userId}
-            onCommentEdit={async (commentId, newText) => {
-              try {
-                const resp = await axios.patch(
-                  `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
-                  { userId, text: newText },
-                );
-
-                const updated = resp?.data;
-
-                setComments((prevComments) =>
-                  prevComments.map((comment) =>
-                    comment.id === commentId
-                      ? { ...comment, ...updated }
-                      : comment,
-                  ),
-                );
-              } catch (err) {
-                console.log("Error editing comment: ", err);
-              }
-            }}
-            onCommentDelete={async (commentId) => {
-              try {
-                await axios.delete(
-                  `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
-                  { data: { userId } },
-                );
-
-                setComments((prevComments) =>
-                  prevComments.filter((c) => c.id !== commentId),
-                );
-              } catch (err) {
-                console.log("Error deleting comment: ", err);
-              }
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="recipe-details-right">
-        <IngredientsList ingredients={mockIngredients} />
-        <ChatBox
-          recipeTitle={recipeTitle}
-          recipeInstructions={recipeInstructions}
-          recipeIngredients={mockIngredients}
-        />
       </div>
     </div>
   );
