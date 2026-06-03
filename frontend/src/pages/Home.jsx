@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -7,15 +8,40 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { Link } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 
 function Home() {
+  const [featuredRecipes, setFeaturedRecipes] = useState([]);
+
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      try {
+        const recipes = [];
+
+        for (let i = 0; i < 3; i++) {
+          const response = await fetch(
+            "https://www.themealdb.com/api/json/v1/1/random.php"
+          );
+
+          const data = await response.json();
+          recipes.push(data.meals[0]);
+        }
+
+        setFeaturedRecipes(recipes);
+      } catch (error) {
+        console.error("Error fetching featured recipes:", error);
+      }
+    };
+
+    fetchRecipes();
+  }, []);
+
   return (
     <Box sx={{ backgroundColor: "#F7F3EA", minHeight: "100vh" }}>
-      {/* Navbar */}
       <Box sx={{ backgroundColor: "#1F6F78", color: "white", py: 2 }}>
         <Container maxWidth={false} sx={{ px: 4 }}>
           <Box
@@ -33,15 +59,25 @@ function Home() {
               </Typography>
             </Stack>
 
-            <Stack direction="row" spacing={6} justifyContent="center">
-              <Typography fontWeight="bold">Home</Typography>
-              <Typography fontWeight="bold">Recipes</Typography>
-              <Typography fontWeight="bold">My Recipes</Typography>
-              <Typography fontWeight="bold">Create Recipe</Typography>
+            <Stack direction="row" spacing={8} justifyContent="center">
+              <Typography component={Link} to="/" sx={navLink}>
+                Home
+              </Typography>
+              <Typography component={Link} to="/recipes" sx={navLink}>
+                Recipes
+              </Typography>
+              <Typography component={Link} to="/my-recipes" sx={navLink}>
+                My Recipes
+              </Typography>
+              <Typography component={Link} to="/create-recipe" sx={navLink}>
+                Create Recipe
+              </Typography>
             </Stack>
 
             <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
+                component={Link}
+                to="/login"
                 variant="contained"
                 sx={{
                   backgroundColor: "#F2D8A7",
@@ -58,7 +94,6 @@ function Home() {
         </Container>
       </Box>
 
-      {/* Hero Section */}
       <Container maxWidth="lg" sx={{ py: 5 }}>
         <Box
           sx={{
@@ -88,6 +123,8 @@ function Home() {
 
             <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
               <Button
+                component={Link}
+                to="/recipes"
                 variant="contained"
                 size="large"
                 sx={{
@@ -102,6 +139,8 @@ function Home() {
               </Button>
 
               <Button
+                component={Link}
+                to="/create-recipe"
                 variant="outlined"
                 size="large"
                 sx={{
@@ -138,15 +177,18 @@ function Home() {
             </Typography>
 
             <Stack spacing={2}>
-              <RecipePreview title="Creamy Garlic Pasta" time="25 min" />
-              <RecipePreview title="Fresh Garden Salad" time="15 min" />
-              <RecipePreview title="Chicken Rice Bowl" time="30 min" />
+              {featuredRecipes.map((recipe) => (
+                <RecipePreview
+                  key={recipe.idMeal}
+                  title={recipe.strMeal}
+                  image={recipe.strMealThumb}
+                />
+              ))}
             </Stack>
           </Card>
         </Box>
       </Container>
 
-      {/* Features Section */}
       <Box sx={{ backgroundColor: "#EFE4D0", py: 5 }}>
         <Container maxWidth="lg">
           <Typography variant="h4" fontWeight="bold" textAlign="center">
@@ -185,7 +227,6 @@ function Home() {
         </Container>
       </Box>
 
-      {/* Bottom CTA */}
       <Box sx={{ backgroundColor: "#1F6F78", color: "white", py: 4 }}>
         <Container maxWidth="lg">
           <Stack
@@ -202,6 +243,8 @@ function Home() {
             </Box>
 
             <Button
+              component={Link}
+              to="/recipes"
               variant="contained"
               sx={{
                 backgroundColor: "#F2D8A7",
@@ -220,7 +263,19 @@ function Home() {
   );
 }
 
-function RecipePreview({ title, time }) {
+const navLink = {
+  color: "white",
+  textDecoration: "none",
+  fontWeight: "bold",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+  "&:hover": {
+    color: "#F2D8A7",
+    transform: "translateY(-1px)",
+  },
+};
+
+function RecipePreview({ title, image }) {
   return (
     <Box
       sx={{
@@ -228,18 +283,31 @@ function RecipePreview({ title, time }) {
         borderRadius: 3,
         p: 2,
         display: "flex",
-        justifyContent: "space-between",
+        gap: 2,
         alignItems: "center",
       }}
     >
-      <Box>
+      <img
+        src={image}
+        alt={title}
+        style={{
+          width: 70,
+          height: 70,
+          borderRadius: 8,
+          objectFit: "cover",
+        }}
+      />
+
+      <Box sx={{ flexGrow: 1 }}>
         <Typography fontWeight="bold">{title}</Typography>
-        <Typography fontSize={14} color="text.secondary">
-          {time} • ⭐⭐⭐⭐⭐
-        </Typography>
       </Box>
 
-      <Button size="small" sx={{ color: "#1F6F78", fontWeight: "bold" }}>
+      <Button
+        component={Link}
+        to="/recipes"
+        size="small"
+        sx={{ color: "#1F6F78", fontWeight: "bold" }}
+      >
         View
       </Button>
     </Box>
