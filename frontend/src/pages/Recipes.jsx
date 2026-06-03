@@ -6,7 +6,13 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   InputAdornment,
+  MenuItem,
+  Select,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -18,6 +24,30 @@ import { useEffect, useState } from "react";
 import "../styles/Recipes.css";
 
 const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
+
+const FILTER_OPTIONS = [
+  { label: "Main ingredient", value: "ingredient" },
+  { label: "Category", value: "category" },
+  { label: "Area", value: "area" },
+];
+
+// Categories given by API
+const CATEGORY_OPTIONS = [
+  "Beef",
+  "Chicken",
+  "Dessert",
+  "Lamb",
+  "Miscellaneous",
+  "Pasta",
+  "Pork",
+  "Seafood",
+  "Side",
+  "Starter",
+  "Vegan",
+  "Vegetarian",
+  "Breakfast",
+  "Goat",
+];
 
 // Consistent formatting for recipe data
 function buildMealSummary(meal) {
@@ -55,6 +85,12 @@ function buildMealSummary(meal) {
 export default function Recipes() {
   const [recipeCollection, setRecipeCollection] = useState("official");
   const [searchText, setSearchText] = useState("");
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [filterType, setFilterType] = useState("ingredient");
+  const [filterValue, setFilterValue] = useState("");
+  const [ingredientOptions, setIngredientOptions] = useState([]);
+  const [areaOptions, setAreaOptions] = useState([]);
+  const [activeFilter, setActiveFilter] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,13 +106,18 @@ export default function Recipes() {
       return undefined;
     }
 
+    // Delay loading to avoid making too many requests while user is typing or changing filters
     async function loadRecipes() {
       setLoading(true);
       setError("");
 
-      const endpoint = searchTerm
-        ? `${API_BASE_URL}/search.php?s=${encodeURIComponent(searchTerm)}`
-        : `${API_BASE_URL}/search.php?f=a`;
+      const hasActiveFilter = Boolean(activeFilter?.type && activeFilter?.value);
+      const filterParam = activeFilter?.type === "ingredient" ? "i" : activeFilter?.type === "category" ? "c" : "a";
+      const endpoint = hasActiveFilter
+        ? `${API_BASE_URL}/filter.php?${filterParam}=${encodeURIComponent(activeFilter.value)}`
+        : searchTerm
+          ? `${API_BASE_URL}/search.php?s=${encodeURIComponent(searchTerm)}`
+          : `${API_BASE_URL}/search.php?f=a`;
 
       try {
         const response = await fetch(endpoint, { signal: abortController.signal });
@@ -86,7 +127,46 @@ export default function Recipes() {
         }
 
         const data = await response.json();
-        const nextRecipes = Array.isArray(data.meals) ? data.meals.map(buildMealSummary) : [];
+        let nextRecipes = Array.isArray(data.meals) ? data.meals : [];
+
+        if (hasActiveFilter && nextRecipes.length > 0) {
+          const detailedMeals = await Promise.all(
+            nextRecipes.map(async (meal) => {
+              const detailResponse = await fetch(
+                `${API_BASE_URL}/lookup.php?i=${encodeURIComponent(meal.idMeal)}`,
+                {
+                  signal: abortController.signal,
+                },
+              );
+
+              if (!detailResponse.ok) {
+                return meal;
+              }
+
+              const detailData = await detailResponse.json();
+              return detailData.meals?.[0] ?? meal;
+            }),
+          );
+
+          nextRecipes = detailedMeals;
+        }
+
+        nextRecipes = nextRecipes
+          .map(buildMealSummary)
+          .filter((card) => {
+            if (searchTerm.length === 0) {
+              return true;
+            }
+
+            const normalizedSearch = searchTerm.toLowerCase();
+            return (
+              card.title.toLowerCase().includes(normalizedSearch) ||
+              card.description.toLowerCase().includes(normalizedSearch) ||
+              card.ingredients.some((ingredient) =>
+                ingredient.toLowerCase().includes(normalizedSearch),
+              )
+            );
+          });
 
         setRecipes(nextRecipes);
       } catch (fetchError) {
@@ -107,7 +187,72 @@ export default function Recipes() {
       window.clearTimeout(loadTimer);
       abortController.abort();
     };
-  }, [recipeCollection, searchText]);
+  }, [activeFilter, recipeCollection, searchText]);
+
+  // Load list of main ingredients and areas for the dropdowns
+  useEffect(() => {
+    const ac = new AbortController();
+
+    async function loadLists() {
+      try {
+        const [ingsRes, areasRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/list.php?i=list`, { signal: ac.signal }),
+          fetch(`${API_BASE_URL}/list.php?a=list`, { signal: ac.signal }),
+        ]);
+
+        if (ingsRes.ok) {
+          const data = await ingsRes.json();
+          if (Array.isArray(data.meals)) {
+            const names = data.meals.map((m) => m.strIngredient).filter(Boolean);
+            setIngredientOptions(names);
+          }
+        }
+
+        if (areasRes.ok) {
+          const data = await areasRes.json();
+          if (Array.isArray(data.meals)) {
+            const names = data.meals.map((m) => m.strArea).filter(Boolean);
+            setAreaOptions(names);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    loadLists();
+    return () => ac.abort();
+  }, []);
+
+  const filterSummary = activeFilter
+    ? `${activeFilter.type === "ingredient" ? "Ingredient" : activeFilter.type === "category" ? "Category" : "Area"}: ${activeFilter.value}`
+    : "";
+
+  function openFilterDialog() {
+    if (recipeCollection === "community") {
+      return;
+    }
+
+    setFilterDialogOpen(true);
+  }
+
+  function applyFilter() {
+    const value = filterValue.trim();
+
+    if (value.length === 0) {
+      return;
+    }
+
+    setActiveFilter({ type: filterType, value });
+    setFilterDialogOpen(false);
+  }
+
+  function clearFilter() {
+    setActiveFilter(null);
+    setFilterValue("");
+    setFilterType("ingredient");
+    setFilterDialogOpen(false);
+  }
 
   return (
     <Box className="recipes-page">
@@ -159,10 +304,119 @@ export default function Recipes() {
             variant="outlined"
             startIcon={<TuneIcon />}
             className="recipes-page__filter-button"
+            onClick={openFilterDialog}
+            disabled={recipeCollection === "community"}
           >
-            Filter
+            {activeFilter ? "Edit filter" : "Filter"}
           </Button>
         </Box>
+
+        {activeFilter ? (
+          <Box className="recipes-page__filter-summary">
+            <Chip label={filterSummary} className="recipes-page__active-filter-chip" />
+            <Button variant="text" className="recipes-page__clear-filter-button" onClick={clearFilter}>
+              Clear filter
+            </Button>
+          </Box>
+        ) : null}
+
+        <Dialog
+          open={filterDialogOpen}
+          onClose={() => setFilterDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>Filter recipes</DialogTitle>
+          <DialogContent className="recipes-page__filter-dialog-content">
+            <Typography variant="body2" className="recipes-page__filter-dialog-copy">
+              Choose whether to filter by meal category or main ingredient.
+            </Typography>
+            <Select
+              fullWidth
+              value={filterType}
+              onChange={(event) => {
+                setFilterType(event.target.value);
+                setFilterValue("");
+              }}
+              className="recipes-page__filter-select"
+            >
+              {FILTER_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {filterType === "category" ? (
+              <Select
+                fullWidth
+                displayEmpty
+                value={filterValue}
+                onChange={(event) => setFilterValue(event.target.value)}
+                className="recipes-page__filter-select"
+              >
+                <MenuItem value="" disabled>
+                  Select a category
+                </MenuItem>
+                {CATEGORY_OPTIONS.map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))}
+              </Select>
+            ) : filterType === "area" ? (
+              <Select
+                fullWidth
+                displayEmpty
+                value={filterValue}
+                onChange={(event) => setFilterValue(event.target.value)}
+                className="recipes-page__filter-select"
+              >
+                <MenuItem value="" disabled>
+                  Select an area
+                </MenuItem>
+                {areaOptions.length === 0 ? (
+                  <MenuItem value="">Loading…</MenuItem>
+                ) : (
+                  areaOptions.map((area) => (
+                    <MenuItem key={area} value={area}>
+                      {area}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            ) : (
+              <Select
+                fullWidth
+                displayEmpty
+                value={filterValue}
+                onChange={(event) => setFilterValue(event.target.value)}
+                className="recipes-page__filter-select"
+              >
+                <MenuItem value="" disabled>
+                  Select a main ingredient
+                </MenuItem>
+                {ingredientOptions.length === 0 ? (
+                  <MenuItem value="">Loading…</MenuItem>
+                ) : (
+                  ingredientOptions.map((ingredient) => (
+                    <MenuItem key={ingredient} value={ingredient}>
+                      {ingredient}
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setFilterDialogOpen(false)}>Cancel</Button>
+            <Button onClick={clearFilter} disabled={!activeFilter && !filterValue && !filterDialogOpen}>
+              Reset
+            </Button>
+            <Button variant="contained" onClick={applyFilter}>
+              Apply
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {recipeCollection === "community" ? (
           <Box className="recipes-page__state">

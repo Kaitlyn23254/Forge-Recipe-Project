@@ -110,6 +110,58 @@
   background-color: #e8d5c4 !important;
 }
 
+.recipes-page__filter-button.Mui-disabled {
+  opacity: 0.55;
+}
+
+.recipes-page__filter-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.recipes-page__active-filter-chip {
+  font-weight: 700 !important;
+  background-color: rgba(58, 152, 185, 0.12) !important;
+  color: #2f2418 !important;
+}
+
+.recipes-page__clear-filter-button {
+  text-transform: none !important;
+  font-weight: 700 !important;
+  color: #3a98b9 !important;
+}
+
+.recipes-page__filter-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px !important;
+}
+
+.recipes-page__filter-dialog-copy {
+  color: #6c5f54 !important;
+}
+
+.recipes-page__filter-select .MuiOutlinedInput-root {
+  border-radius: 16px;
+  background-color: #fff7ea;
+}
+
+.recipes-page__filter-select .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(58, 152, 185, 0.18);
+}
+
+.recipes-page__filter-select .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(58, 152, 185, 0.32);
+}
+
+.recipes-page__filter-select .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #3a98b9;
+}
+
 .recipes-page__grid {
   display: grid;
   gap: 20px;
