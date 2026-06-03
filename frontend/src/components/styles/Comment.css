@@ -46,7 +46,13 @@
   cursor: pointer;
 }
 
-.comment-reply-button {
+.comment-reply-button,
+.reply-edit,
+.reply-delete,
+.comment-edit-button,
+.comment-delete-button,
+.editing-save-btn,
+.editing-cancel-btn {
   margin-left: 0.5rem;
   border: none;
   background: transparent;

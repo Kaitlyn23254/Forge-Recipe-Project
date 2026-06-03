@@ -118,6 +118,56 @@ export default function RecipeDetails() {
     }
   };
 
+  const handleReplyEdit = async (commentId, replyId, text) => {
+    try {
+      const resp = await axios.patch(
+        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies/${replyId}`,
+        { userId, text },
+      );
+
+      const updatedReply = resp?.data;
+
+      setComments((prevComments) =>
+        prevComments.map((comment) => {
+          if (comment.id !== commentId) return comment;
+
+          return {
+            ...comment,
+            replies: (comment.replies ?? []).map((reply) =>
+              reply.id === replyId ? { ...reply, ...updatedReply } : reply,
+            ),
+          };
+        }),
+      );
+    } catch (err) {
+      console.log("Error editing reply: ", err);
+    }
+  };
+
+  const handleReplyDelete = async (commentId, replyId) => {
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies/${replyId}`,
+        { data: { userId } },
+      );
+
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: (comment.replies ?? []).filter(
+                  (r) => r.id !== replyId,
+                ),
+              }
+            : comment,
+        ),
+      );
+    } catch (err) {
+      console.log("Error deleting reply: ", err);
+    }
+  };
+
   const handleCommentLike = async (commentId) => {
     try {
       const postResp = await axios.post(
@@ -196,6 +246,40 @@ export default function RecipeDetails() {
             replies={c.replies ?? []}
             onReplySubmit={handleReplySubmit}
             onReplyLike={handleReplyLike}
+            onReplyEdit={handleReplyEdit}
+            onReplyDelete={handleReplyDelete}
+            currentUserId={userId}
+            commentUserId={c.userId}
+            onCommentEdit={async (commentId, newText) => {
+              try {
+                const resp = await axios.patch(
+                  `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                  { userId, text: newText },
+                );
+
+                const updated = resp?.data;
+
+                setComments((prevComments) =>
+                  prevComments.map((comment) =>
+                    comment.id === commentId ? { ...comment, ...updated } : comment,
+                  ),
+                );
+              } catch (err) {
+                console.log("Error editing comment: ", err);
+              }
+            }}
+            onCommentDelete={async (commentId) => {
+              try {
+                await axios.delete(
+                  `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                  { data: { userId } },
+                );
+
+                setComments((prevComments) => prevComments.filter((c) => c.id !== commentId));
+              } catch (err) {
+                console.log("Error deleting comment: ", err);
+              }
+            }}
           />
         ))}
       </div>

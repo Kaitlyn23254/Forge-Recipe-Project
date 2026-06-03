@@ -139,4 +139,78 @@ async function likeComment(commentId, userId) {
   };
 }
 
-export { getCommentsByRecipeId, postComment, likeComment };
+async function editComment({ commentId, userId, text }) {
+  if (!commentId || !userId || !text) {
+    throw new Error("commentId, userId and text are required");
+  }
+
+  const commentRef = doc(db, "comments", commentId);
+
+  await runTransaction(db, async (tx) => {
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists()) throw new Error("Comment not found");
+    const data = commentSnap.data();
+    if (data.userId !== userId) throw new Error("You can only edit your own comment");
+    tx.update(commentRef, { text, updatedAt: serverTimestamp() });
+  });
+
+  const [commentSnap, metaSnap, userLikeSnap] = await Promise.all([
+    getDoc(commentRef),
+    getDoc(doc(db, "comments", commentId, "likes", "metadata")),
+    getDoc(doc(db, "comments", commentId, "likes", userId)),
+  ]);
+
+  const commentData = commentSnap.exists() ? commentSnap.data() : {};
+  const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+
+  return {
+    id: commentId,
+    ...commentData,
+    likeCount,
+    likedByUser: userLikeSnap.exists(),
+  };
+}
+
+async function deleteComment({ commentId, userId }) {
+  if (!commentId || !userId) {
+    throw new Error("commentId and userId are required");
+  }
+
+  const commentRef = doc(db, "comments", commentId);
+
+  let commentData = null;
+
+  await runTransaction(db, async (tx) => {
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists()) throw new Error("Comment not found");
+    const data = commentSnap.data();
+    if (data.userId !== userId) throw new Error("You can only delete your own comment");
+    commentData = { id: commentId, ...data };
+  });
+
+  // delete likes and replies (and their likes) in batches
+  const likesCol = collection(db, "comments", commentId, "likes");
+  const likesSnapshot = await getDocs(likesCol);
+  const repliesCol = collection(db, "comments", commentId, "replies");
+  const repliesSnapshot = await getDocs(repliesCol);
+
+  const batch = writeBatch(db);
+
+  likesSnapshot.docs.forEach((d) => batch.delete(d.ref));
+
+  // delete replies and their likes
+  for (const replyDoc of repliesSnapshot.docs) {
+    const replyId = replyDoc.id;
+    const replyLikes = await getDocs(collection(db, "comments", commentId, "replies", replyId, "likes"));
+    replyLikes.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(replyDoc.ref);
+  }
+
+  batch.delete(commentRef);
+
+  await batch.commit();
+
+  return commentData;
+}
+
+export { getCommentsByRecipeId, postComment, likeComment, editComment, deleteComment };

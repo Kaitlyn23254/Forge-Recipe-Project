@@ -3,6 +3,8 @@ import {
   getCommentsByRecipeId,
   postComment,
   likeComment,
+  editComment,
+  deleteComment,
 } from "../db/comments.js";
 import {
   deleteReply,
@@ -53,6 +55,38 @@ router.post("/:commentId/like", async function (req, res) {
   try {
     const result = await likeComment(commentId, userId);
     return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch("/:commentId", async function (req, res) {
+  const { commentId } = req.params;
+  const { userId, text } = req.body || {};
+
+  if (!commentId || !userId || !text) {
+    return res.status(400).json({ error: "commentId, userId and text are required" });
+  }
+
+  try {
+    const updated = await editComment({ commentId, userId, text });
+    return res.json(updated);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/:commentId", async function (req, res) {
+  const { commentId } = req.params;
+  const { userId } = req.body || {};
+
+  if (!commentId || !userId) {
+    return res.status(400).json({ error: "commentId and userId are required" });
+  }
+
+  try {
+    const deleted = await deleteComment({ commentId, userId });
+    return res.json(deleted);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
