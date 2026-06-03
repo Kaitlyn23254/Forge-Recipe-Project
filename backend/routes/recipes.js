@@ -5,13 +5,14 @@ const router = express.Router();
 
 router.get("/:recipeId", async function (req, res) {
   const { recipeId } = req.params;
+  const source = req.query.source === "official" ? "official" : "community";
 
   if (!recipeId) {
     return res.status(400).json({ error: "recipeId is required" });
   }
 
   try {
-    const recipe = await getRecipeById(recipeId);
+    const recipe = await getRecipeById(recipeId, { source });
     return res.json(recipe);
   } catch (err) {
     if (err.statusCode === 404) {

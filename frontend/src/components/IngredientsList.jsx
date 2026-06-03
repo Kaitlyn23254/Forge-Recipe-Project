@@ -1,10 +1,5 @@
 import "../styles/RecipeDetails.css";
 
-// ingredients is an array of {
-//   ingredient: string (e.g 'carrot')
-//   measurement: string (e.g '3.4 cup')
-// }
-
 export default function IngredientsList({ ingredients }) {
   return (
     <div className="recipe-details-panel recipe-details-ingredients">

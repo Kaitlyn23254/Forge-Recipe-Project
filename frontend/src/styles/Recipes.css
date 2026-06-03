@@ -236,6 +236,29 @@
   letter-spacing: -0.4px !important;
 }
 
+.recipes-page__recipe-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.recipes-page__recipe-dialog-header-title {
+  min-width: 0;
+  font-weight: 800 !important;
+  letter-spacing: -0.4px;
+  color: #2f2418;
+}
+
+.recipes-page__view-recipe-button {
+  flex-shrink: 0;
+  text-transform: none !important;
+  font-weight: 700 !important;
+  border-radius: 999px !important;
+  background: #3a98b9 !important;
+}
+
 .recipes-page__recipe-dialog-content {
   padding-top: 8px !important;
 }

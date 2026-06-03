@@ -8,6 +8,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase.js";
+import { fetchMealById, normalizeMealToRecipe, parseInstructionsText } from "../mealdb.js";
 
 const commentsCollection = collection(db, "comments");
 
@@ -17,19 +18,79 @@ function isValidRatingValue(rating) {
   return Math.abs(n * 2 - Math.round(n * 2)) < 1e-9;
 }
 
-async function getRecipeById(recipeId) {
-  if (!recipeId) throw new Error("recipeId is required");
+async function getRatingSummaryForRecipe(recipeId) {
+  const commentsQuery = query(
+    commentsCollection,
+    where("recipeId", "==", recipeId),
+  );
+  const snapshot = await getDocs(commentsQuery);
 
-  const recipeRef = doc(db, "recipes", recipeId);
-  const recipeSnap = await getDoc(recipeRef);
+  const rated = snapshot.docs
+    .map((d) => d.data().rating)
+    .filter((rating) => isValidRatingValue(rating));
 
-  if (!recipeSnap.exists()) {
-    const err = new Error("Recipe not found");
-    err.statusCode = 404;
-    throw err;
+  if (rated.length === 0) {
+    return { averageRating: null, ratingCount: 0 };
   }
 
-  return { id: recipeSnap.id, ...recipeSnap.data() };
+  const sum = rated.reduce((acc, r) => acc + Number(r), 0);
+  const averageRating = Math.round((sum / rated.length) * 10) / 10;
+
+  return { averageRating, ratingCount: rated.length };
+}
+
+function normalizeFirestoreRecipe(recipeId, data) {
+  const instructions = Array.isArray(data.instructions)
+    ? data.instructions
+    : parseInstructionsText(data.instructions);
+
+  return {
+    id: recipeId,
+    title: data.title ?? "",
+    imageUrl: data.imageUrl ?? null,
+    tags: data.tags ?? "",
+    instructions,
+    ingredients: Array.isArray(data.ingredients) ? data.ingredients : [],
+    recipeType: data.recipeType ?? "community",
+    averageRating: data.averageRating ?? null,
+    ratingCount: data.ratingCount ?? 0,
+    youtube: data.youtube ?? "",
+    sourceUrl: data.sourceUrl ?? "",
+  };
+}
+
+async function getRecipeById(recipeId, { source = "community" } = {}) {
+  if (!recipeId) throw new Error("recipeId is required");
+
+  if (source !== "official") {
+    const recipeRef = doc(db, "recipes", recipeId);
+    const recipeSnap = await getDoc(recipeRef);
+
+    if (recipeSnap.exists()) {
+      return normalizeFirestoreRecipe(recipeId, recipeSnap.data());
+    }
+  }
+
+  if (source === "official") {
+    const meal = await fetchMealById(recipeId);
+
+    if (!meal) {
+      const err = new Error("Recipe not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const ratingSummary = await getRatingSummaryForRecipe(recipeId);
+
+    return {
+      ...normalizeMealToRecipe(meal),
+      ...ratingSummary,
+    };
+  }
+
+  const err = new Error("Recipe not found");
+  err.statusCode = 404;
+  throw err;
 }
 
 async function recomputeRecipeAverageRating(recipeId) {
@@ -70,4 +131,5 @@ export {
   getRecipeById,
   recomputeRecipeAverageRating,
   isValidRatingValue,
+  getRatingSummaryForRecipe,
 };
