@@ -31,7 +31,8 @@
   margin: 0 0 0.75rem;
 }
 
-.comment-footer {
+.comment-footer,
+.reply-footer {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -39,9 +40,67 @@
   color: #666;
 }
 
-.comment-footer svg {
+.comment-footer svg,
+.reply-footer svg {
   font-size: 1rem;
   cursor: pointer;
+}
+
+.comment-reply-button {
+  margin-left: 0.5rem;
+  border: none;
+  background: transparent;
+  color: #666666;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.comment-reply-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.comment-reply-form input {
+  flex: 1;
+  border: 1px solid #d6d6d6;
+  border-radius: 999px;
+  padding: 0.65rem 0.9rem;
+}
+
+.comment-replies {
+  margin-top: 0.9rem;
+  padding-left: 1rem;
+  border-left: 2px solid #ececec;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.reply {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.reply-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.reply-username {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.reply-header p:last-child,
+.reply-body {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 900px) {

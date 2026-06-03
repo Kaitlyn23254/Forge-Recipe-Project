@@ -17,6 +17,31 @@ export default function RecipeDetails() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
 
+  const loadRepliesForComment = async (commentId) => {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies`,
+      { params: { userId } },
+    );
+
+    return response.data;
+  };
+
+  const fetchCommentsWithReplies = async () => {
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
+      { params: { userId } },
+    );
+
+    const commentsWithReplies = await Promise.all(
+      response.data.map(async (comment) => ({
+        ...comment,
+        replies: await loadRepliesForComment(comment.id),
+      })),
+    );
+
+    setComments(commentsWithReplies);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -32,7 +57,10 @@ export default function RecipeDetails() {
       );
 
       const newComment = response.data;
-      setComments((prevComments) => [...prevComments, newComment]);
+      setComments((prevComments) => [
+        ...prevComments,
+        { ...newComment, replies: [] },
+      ]);
       setCommentText("");
     } catch (err) {
       console.log("Error posting comment: ", err);
@@ -40,23 +68,55 @@ export default function RecipeDetails() {
   };
 
   useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
-          { params: { userId } },
-        );
-
-        console.log("Response useEffect data is: ", response.data);
-
-        setComments(response.data);
-      } catch (err) {
-        console.error("Error fetching comments: ", err);
-      }
-    };
-
-    fetchComments();
+    fetchCommentsWithReplies().catch((err) => {
+      console.error("Error fetching comments: ", err);
+    });
   }, []);
+
+  const handleReplySubmit = async (commentId, text) => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies`,
+        { commentId, userId, text },
+      );
+
+      const replies = await loadRepliesForComment(commentId);
+
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === commentId ? { ...comment, replies } : comment,
+        ),
+      );
+    } catch (err) {
+      console.log("Error posting reply: ", err);
+    }
+  };
+
+  const handleReplyLike = async (commentId, replyId) => {
+    try {
+      const postResp = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies/${replyId}/like`,
+        { userId },
+      );
+
+      const updatedReply = postResp?.data;
+
+      setComments((prevComments) =>
+        prevComments.map((comment) => {
+          if (comment.id !== commentId) return comment;
+
+          return {
+            ...comment,
+            replies: (comment.replies ?? []).map((reply) =>
+              reply.id === replyId ? { ...reply, ...updatedReply } : reply,
+            ),
+          };
+        }),
+      );
+    } catch (err) {
+      console.log("Error getting reply like response: ", err);
+    }
+  };
 
   const handleCommentLike = async (commentId) => {
     try {
@@ -133,6 +193,9 @@ export default function RecipeDetails() {
             likedByUser={c.likedByUser ?? false}
             createdAt={timestampToString(c.createdAt)}
             handleCommentLike={handleCommentLike}
+            replies={c.replies ?? []}
+            onReplySubmit={handleReplySubmit}
+            onReplyLike={handleReplyLike}
           />
         ))}
       </div>
