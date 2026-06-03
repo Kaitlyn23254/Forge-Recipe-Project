@@ -44,6 +44,7 @@ export default function RecipeDetails() {
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
+          { params: { userId } },
         );
 
         console.log("Response useEffect data is: ", response.data);
@@ -64,19 +65,11 @@ export default function RecipeDetails() {
         { userId },
       );
 
-      const updatedLikes = postResp?.data?.likes;
+      const updatedComment = postResp?.data;
 
       setComments((prevComments) =>
         prevComments.map((c) =>
-          c.id === commentId
-            ? {
-                ...c,
-                likeCount:
-                  typeof updatedLikes === "number"
-                    ? updatedLikes
-                    : (c.likeCount || 0) + 1,
-              }
-            : c,
+          c.id === commentId ? { ...c, ...updatedComment } : c,
         ),
       );
     } catch (err) {
@@ -137,6 +130,7 @@ export default function RecipeDetails() {
             username={username}
             text={c.text}
             numLikes={c.likeCount}
+            likedByUser={c.likedByUser ?? false}
             createdAt={timestampToString(c.createdAt)}
             handleCommentLike={handleCommentLike}
           />

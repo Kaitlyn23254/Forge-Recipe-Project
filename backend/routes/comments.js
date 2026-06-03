@@ -9,10 +9,12 @@ const router = express.Router();
 
 router.get("/:recipeId", async function (req, res) {
   const { recipeId } = req.params;
+  const { userId } = req.query || {};
+
   if (!recipeId) return res.status(400).json({ error: "recipeId is required" });
 
   try {
-    const comments = await getCommentsByRecipeId(recipeId);
+    const comments = await getCommentsByRecipeId(recipeId, userId);
     return res.json(comments);
   } catch (err) {
     return res.status(500).json({ error: err.message });

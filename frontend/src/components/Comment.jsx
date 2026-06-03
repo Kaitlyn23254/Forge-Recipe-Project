@@ -1,4 +1,5 @@
 import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 
 import "./styles/Comment.css";
 
@@ -8,6 +9,7 @@ export default function Comment({
   text,
   createdAt,
   numLikes,
+  likedByUser,
   handleCommentLike,
 }) {
   return (
@@ -20,7 +22,11 @@ export default function Comment({
         <p>{text}</p>
       </div>
       <div className="comment-footer">
-        <ThumbUpOffAltIcon onClick={() => handleCommentLike(id)} />
+        {likedByUser ? (
+          <ThumbUpIcon onClick={() => handleCommentLike(id)} />
+        ) : (
+          <ThumbUpOffAltIcon onClick={() => handleCommentLike(id)} />
+        )}
         <span>{numLikes}</span>
       </div>
       <p></p>

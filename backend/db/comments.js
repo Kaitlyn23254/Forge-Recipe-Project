@@ -21,7 +21,7 @@ const commentsCollection = collection(db, "comments");
 // rating: 5,
 // likeCount: 0}
 
-async function getCommentsByRecipeId(recipeId) {
+async function getCommentsByRecipeId(recipeId, userId) {
   const commentsQuery = query(
     commentsCollection,
     where("recipeId", "==", recipeId),
@@ -38,11 +38,19 @@ async function getCommentsByRecipeId(recipeId) {
     comments.map(async (c) => {
       try {
         const metaRef = doc(db, "comments", c.id, "likes", "metadata");
+        const userLikeRef = userId
+          ? doc(db, "comments", c.id, "likes", userId)
+          : null;
         const metaSnap = await getDoc(metaRef);
+        const userLikeSnap = userLikeRef ? await getDoc(userLikeRef) : null;
         const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
-        return { ...c, likeCount };
+        return {
+          ...c,
+          likeCount,
+          likedByUser: userLikeSnap ? userLikeSnap.exists() : false,
+        };
       } catch (err) {
-        return { ...c, likeCount: 0 };
+        return { ...c, likeCount: 0, likedByUser: false };
       }
     }),
   );
@@ -90,6 +98,7 @@ async function likeComment(commentId, userId) {
   if (!commentId || !userId)
     throw new Error("commentId and userId are required");
 
+  const commentRef = doc(db, "comments", commentId);
   const likeRef = doc(db, "comments", commentId, "likes", userId);
   const metaRef = doc(db, "comments", commentId, "likes", "metadata");
 
@@ -113,8 +122,21 @@ async function likeComment(commentId, userId) {
     }
   });
 
-  const updated = await getDoc(metaRef);
-  return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
+  const [commentSnap, metaSnap, likeSnap] = await Promise.all([
+    getDoc(commentRef),
+    getDoc(metaRef),
+    getDoc(likeRef),
+  ]);
+
+  const commentData = commentSnap.exists() ? commentSnap.data() : {};
+  const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+
+  return {
+    id: commentId,
+    ...commentData,
+    likeCount,
+    likedByUser: likeSnap.exists(),
+  };
 }
 
 export { getCommentsByRecipeId, postComment, likeComment };
