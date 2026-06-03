@@ -80,9 +80,15 @@ export default function Comment({
       </div>
       <div className="comment-footer">
         {likedByUser ? (
-          <ThumbUpIcon onClick={() => handleCommentLike(id)} />
+          <ThumbUpIcon
+            className="comment-footer__icon"
+            onClick={() => handleCommentLike(id)}
+          />
         ) : (
-          <ThumbUpOffAltIcon onClick={() => handleCommentLike(id)} />
+          <ThumbUpOffAltIcon
+            className="comment-footer__icon"
+            onClick={() => handleCommentLike(id)}
+          />
         )}
         <span>{numLikes}</span>
         <button

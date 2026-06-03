@@ -1,11 +1,67 @@
-.comment {
-  width: 50%;
+.comment-section {
+  width: 100%;
   box-sizing: border-box;
-  border: 1px solid #d6d6d6;
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  background: #fff;
+}
+
+.comment-section__form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.comment-section__input,
+.comment-reply-form input,
+.comment-edit-form input,
+.reply-edit-form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(58, 152, 185, 0.18);
+  border-radius: 999px;
+  padding: 12px 16px;
+  background-color: #fff7ea;
+  color: #2f2418;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.comment-section__input:focus,
+.comment-reply-form input:focus,
+.comment-edit-form input:focus,
+.reply-edit-form input:focus {
+  border-color: #3a98b9;
+}
+
+.comment-section__submit,
+.comment-reply-form button[type="submit"],
+.comment-edit-form .editing-save-btn,
+.reply-edit-form .editing-save-btn {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  background: #3a98b9;
+  cursor: pointer;
+}
+
+.comment-section__submit:hover,
+.comment-reply-form button[type="submit"]:hover,
+.comment-edit-form .editing-save-btn:hover,
+.reply-edit-form .editing-save-btn:hover {
+  background: #2f98b9;
+}
+
+.comment {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(58, 152, 185, 0.16);
+  border-radius: 22px;
+  padding: 16px 18px;
+  margin-bottom: 0;
+  background: rgba(255, 247, 234, 0.75);
+  box-shadow: 0 18px 40px rgba(61, 49, 31, 0.08);
 }
 
 .comment-header {
@@ -15,20 +71,26 @@
   margin-bottom: 0.5rem;
 }
 
-.comment-username {
+.comment-username,
+.reply-username {
   font-weight: 700;
   font-size: 1rem;
   margin: 0;
+  color: #2f2418;
 }
 
-.comment-header p:last-child {
+.comment-header p:last-child,
+.reply-header p:last-child {
   font-size: 0.875rem;
-  color: #7a7a7a;
+  color: #6c5f54;
   margin: 0;
 }
 
-.comment-body p {
+.comment-body p,
+.reply-body {
   margin: 0 0 0.75rem;
+  color: #4c3f34;
+  line-height: 1.6;
 }
 
 .comment-footer,
@@ -36,13 +98,14 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.8rem;
-  color: #666;
+  font-size: 0.875rem;
+  color: #6c5f54;
 }
 
-.comment-footer svg,
+.comment-footer__icon,
 .reply-footer svg {
-  font-size: 1rem;
+  font-size: 1.1rem !important;
+  color: #3a98b9;
   cursor: pointer;
 }
 
@@ -51,41 +114,48 @@
 .reply-delete,
 .comment-edit-button,
 .comment-delete-button,
-.editing-save-btn,
-.editing-cancel-btn {
+.editing-cancel-btn,
+.recipe-details-action-btn {
   margin-left: 0.5rem;
   border: none;
   background: transparent;
-  color: #666666;
-  font-weight: 600;
+  color: #3a98b9;
+  font-weight: 700;
   cursor: pointer;
   padding: 0;
+}
+
+.editing-cancel-btn {
+  color: #6c5f54;
+}
+
+.comment-edit-form,
+.reply-edit-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
 
 .comment-reply-form {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.75rem;
-}
-
-.comment-reply-form input {
-  flex: 1;
-  border: 1px solid #d6d6d6;
-  border-radius: 999px;
-  padding: 0.65rem 0.9rem;
+  align-items: center;
 }
 
 .comment-replies {
   margin-top: 0.9rem;
   padding-left: 1rem;
-  border-left: 2px solid #ececec;
+  border-left: 2px solid rgba(58, 152, 185, 0.22);
   display: grid;
   gap: 0.65rem;
 }
 
 .reply {
-  background: #f8f9fb;
-  border-radius: 10px;
+  background: rgba(232, 213, 196, 0.28);
+  border-radius: 14px;
   padding: 0.75rem 0.9rem;
 }
 
@@ -97,20 +167,29 @@
 }
 
 .reply-username {
-  margin: 0;
-  font-weight: 700;
   font-size: 0.95rem;
 }
 
-.reply-header p:last-child,
-.reply-body {
-  margin: 0;
-  color: #666;
-  font-size: 0.9rem;
+.reply-header p:last-child {
+  font-size: 0.85rem;
 }
 
-@media (max-width: 900px) {
-  .comment {
+.reply-body {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .comment-section__form,
+  .comment-reply-form,
+  .comment-edit-form,
+  .reply-edit-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .comment-section__submit,
+  .comment-reply-form button[type="submit"] {
     width: 100%;
   }
 }

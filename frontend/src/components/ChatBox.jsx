@@ -2,6 +2,11 @@ import axios from "axios";
 import { useState } from "react";
 import ChatMessage from "./ChatMessage";
 
+import "./styles/ChatBox.css";
+
+const WELCOME_MESSAGE =
+  "Hi! I'm Chef Cook-A-Lot. I'm here to help you with any questions regarding this recipe, just let me know what you need!";
+
 export default function ChatBox({
   recipeTitle,
   recipeInstructions,
@@ -47,10 +52,11 @@ export default function ChatBox({
   };
 
   return (
-    <div className="chat-box-container">
-      <h1>Chef Cook-A-Lot</h1>
+    <div className="recipe-details-panel chat-box">
+      <h2 className="chat-box__title">Chef Cook-A-Lot</h2>
 
-      <div className="chat-messages-container">
+      <div className="chat-box__messages">
+        <ChatMessage role="assistant" content={WELCOME_MESSAGE} />
         {messages.map((m, index) => (
           <ChatMessage
             key={`${m.role}-${index}`}
@@ -60,14 +66,18 @@ export default function ChatBox({
         ))}
       </div>
 
-      <input
-        type="text"
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-      ></input>
-      <button className="chat-box-send-btn" onClick={handleSubmit}>
-        Send
-      </button>
+      <form className="chat-box__form" onSubmit={handleSubmit}>
+        <input
+          className="chat-box__input"
+          type="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Ask about this recipe..."
+        />
+        <button className="chat-box__send" type="submit">
+          Send
+        </button>
+      </form>
     </div>
   );
 }

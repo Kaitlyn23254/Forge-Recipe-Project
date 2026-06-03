@@ -1,4 +1,4 @@
-import Box from "@mui/material/Box";
+import "../styles/RecipeDetails.css";
 
 // ingredients is an array of {
 //   ingredient: string (e.g 'carrot')
@@ -7,44 +7,23 @@ import Box from "@mui/material/Box";
 
 export default function IngredientsList({ ingredients }) {
   return (
-    <div
-      className="ingredients-list"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        width: "fit-content",
-      }}
-    >
-      <h2 className="ingredients-title">Ingredients</h2>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "max-content max-content",
-          columnGap: 10,
-          rowGap: 1,
-          alignItems: "center",
-          justifyItems: "center",
-          justifyContent: "center",
-          width: "20rem",
-          p: 2,
-          border: 1,
-        }}
-      >
+    <div className="recipe-details-panel recipe-details-ingredients">
+      <h2 className="recipe-details-panel__title">Ingredients</h2>
+      <div className="recipe-details-ingredients__list">
         {ingredients.map((ingredient, index) => (
-          <Box
+          <div
             key={`${ingredient.ingredient}-${ingredient.measurement}-${index}`}
-            sx={{ display: "contents" }}
+            className="recipe-details-ingredients__row"
           >
-            <Box>
+            <span className="recipe-details-ingredients__measurement">
               {ingredient.measurement}
-            </Box>
-            <Box>
+            </span>
+            <span className="recipe-details-ingredients__name">
               {ingredient.ingredient}
-            </Box>
-          </Box>
+            </span>
+          </div>
         ))}
-      </Box>
+      </div>
     </div>
   );
 }
