@@ -5,6 +5,7 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 import { timestampToString } from "../utility/timestampToString";
 
 import "../styles/RecipeDetails.css";
@@ -44,6 +45,8 @@ export default function RecipeDetails() {
   const [commentRating, setCommentRating] = useState(null);
   const [recipe, setRecipe] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [recipeLoading, setRecipeLoading] = useState(true);
+  const [commentsLoading, setCommentsLoading] = useState(true);
 
   const fetchRecipe = async () => {
     try {
@@ -51,6 +54,7 @@ export default function RecipeDetails() {
         `${import.meta.env.VITE_BASE_URL}/recipes/${recipeId}`,
       );
       setRecipe(response.data);
+      setRecipeLoading(false);
     } catch (err) {
       console.error("Error fetching recipe: ", err);
     }
@@ -79,6 +83,7 @@ export default function RecipeDetails() {
     );
 
     setComments(commentsWithReplies);
+    setCommentsLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -272,140 +277,144 @@ export default function RecipeDetails() {
   const recipeTags = recipe?.tags ?? FALLBACK_RECIPE.tags;
   const recipeInstructions =
     recipe?.instructions ?? FALLBACK_RECIPE.instructions;
-  const recipeIngredients =
-    recipe?.ingredients ?? FALLBACK_RECIPE.ingredients;
+  const recipeIngredients = recipe?.ingredients ?? FALLBACK_RECIPE.ingredients;
   const averageRating = recipe?.averageRating ?? FALLBACK_RECIPE.averageRating;
   const ratingCount = recipe?.ratingCount ?? FALLBACK_RECIPE.ratingCount;
 
   return (
     <div className="recipe-details-page">
       <div className="recipe-details-page__inner">
-        <div className="recipe-details">
-          <div className="recipe-details-header">
-            {recipeImageUrl ? (
-              <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
-            ) : null}
-            <div className="recipe-details-header-text">
-              <div className="recipe-details-header-title-row">
-                <h1 className="recipe-details-title">{recipeTitle}</h1>
-                {isSaved ? (
-                  <BookmarkIcon
-                    className="recipe-details-save-icon"
-                    onClick={handleSaveRecipe}
-                    role="button"
-                    aria-label="Remove saved recipe"
-                  />
-                ) : (
-                  <BookmarkBorderIcon
-                    className="recipe-details-save-icon"
-                    onClick={handleSaveRecipe}
-                    role="button"
-                    aria-label="Save recipe"
-                  />
-                )}
+        {commentsLoading || recipeLoading ? (
+          <div className="recipe-details-loading">
+            <CircularProgress />
+            <p>Loading...</p>
+          </div>
+        ) : (
+          <div className="recipe-details">
+            <div className="recipe-details-header">
+              {recipeImageUrl ? (
+                <img src={recipeImageUrl} alt={`Picture of ${recipeTitle}`} />
+              ) : null}
+              <div className="recipe-details-header-text">
+                <div className="recipe-details-header-title-row">
+                  <h1 className="recipe-details-title">{recipeTitle}</h1>
+                  {isSaved ? (
+                    <BookmarkIcon
+                      className="recipe-details-save-icon"
+                      onClick={handleSaveRecipe}
+                      role="button"
+                      aria-label="Remove saved recipe"
+                    />
+                  ) : (
+                    <BookmarkBorderIcon
+                      className="recipe-details-save-icon"
+                      onClick={handleSaveRecipe}
+                      role="button"
+                      aria-label="Save recipe"
+                    />
+                  )}
+                </div>
+                <h4 className="recipe-details-tags">{recipeTags}</h4>
+                <div className="recipe-details-average-rating">
+                  <Rating value={averageRating ?? 0} precision={0.5} readOnly />
+                  <Typography variant="body2" component="span">
+                    {ratingCount > 0
+                      ? `${averageRating} · ${ratingCount} rating${ratingCount === 1 ? "" : "s"}`
+                      : "No ratings yet"}
+                  </Typography>
+                </div>
               </div>
-              <h4 className="recipe-details-tags">{recipeTags}</h4>
-              <div className="recipe-details-average-rating">
-                <Rating
-                  value={averageRating ?? 0}
-                  precision={0.5}
-                  readOnly
+            </div>
+
+            <div className="recipe-details-content">
+              <div className="recipe-details-content-left">
+                <div className="recipe-details-panel recipe-details-instructions">
+                  <h2 className="recipe-details-panel__title">Instructions</h2>
+                  <ol className="recipe-details-instructions__list">
+                    {recipeInstructions.map((instruction, idx) => (
+                      <li key={`${idx}-${instruction}`}>{instruction}</li>
+                    ))}
+                  </ol>
+                </div>
+                <CommentSection
+                  commentText={commentText}
+                  setCommentText={setCommentText}
+                  handleSubmit={handleSubmit}
+                  rating={commentRating}
+                  setRating={setCommentRating}
                 />
-                <Typography variant="body2" component="span">
-                  {ratingCount > 0
-                    ? `${averageRating} · ${ratingCount} rating${ratingCount === 1 ? "" : "s"}`
-                    : "No ratings yet"}
-                </Typography>
-              </div>
-            </div>
-          </div>
+                <div className="recipe-details-comments">
+                  {comments.map((c) => (
+                    <Comment
+                      key={
+                        c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`
+                      }
+                      id={c.id}
+                      username={username}
+                      text={c.text}
+                      numLikes={c.likeCount}
+                      likedByUser={c.likedByUser ?? false}
+                      createdAt={timestampToString(c.createdAt)}
+                      handleCommentLike={handleCommentLike}
+                      replies={c.replies ?? []}
+                      onReplySubmit={handleReplySubmit}
+                      onReplyLike={handleReplyLike}
+                      onReplyEdit={handleReplyEdit}
+                      onReplyDelete={handleReplyDelete}
+                      currentUserId={userId}
+                      commentUserId={c.userId}
+                      rating={c.rating}
+                      onCommentEdit={async (commentId, newText) => {
+                        try {
+                          const resp = await axios.patch(
+                            `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                            { userId, text: newText },
+                          );
 
-          <div className="recipe-details-content">
-            <div className="recipe-details-content-left">
-              <div className="recipe-details-panel recipe-details-instructions">
-                <h2 className="recipe-details-panel__title">Instructions</h2>
-                <ol className="recipe-details-instructions__list">
-                  {recipeInstructions.map((instruction, idx) => (
-                    <li key={`${idx}-${instruction}`}>{instruction}</li>
+                          const updated = resp?.data;
+
+                          setComments((prevComments) =>
+                            prevComments.map((comment) =>
+                              comment.id === commentId
+                                ? { ...comment, ...updated }
+                                : comment,
+                            ),
+                          );
+                        } catch (err) {
+                          console.log("Error editing comment: ", err);
+                        }
+                      }}
+                      onCommentDelete={async (commentId) => {
+                        try {
+                          await axios.delete(
+                            `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                            { data: { userId } },
+                          );
+
+                          setComments((prevComments) =>
+                            prevComments.filter((c) => c.id !== commentId),
+                          );
+                          await fetchRecipe();
+                        } catch (err) {
+                          console.log("Error deleting comment: ", err);
+                        }
+                      }}
+                    />
                   ))}
-                </ol>
+                </div>
               </div>
-              <CommentSection
-                commentText={commentText}
-                setCommentText={setCommentText}
-                handleSubmit={handleSubmit}
-                rating={commentRating}
-                setRating={setCommentRating}
-              />
-              <div className="recipe-details-comments">
-                {comments.map((c) => (
-                  <Comment
-                    key={c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`}
-                    id={c.id}
-                    username={username}
-                    text={c.text}
-                    numLikes={c.likeCount}
-                    likedByUser={c.likedByUser ?? false}
-                    createdAt={timestampToString(c.createdAt)}
-                    handleCommentLike={handleCommentLike}
-                    replies={c.replies ?? []}
-                    onReplySubmit={handleReplySubmit}
-                    onReplyLike={handleReplyLike}
-                    onReplyEdit={handleReplyEdit}
-                    onReplyDelete={handleReplyDelete}
-                    currentUserId={userId}
-                    commentUserId={c.userId}
-                    rating={c.rating}
-                    onCommentEdit={async (commentId, newText) => {
-                      try {
-                        const resp = await axios.patch(
-                          `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
-                          { userId, text: newText },
-                        );
 
-                        const updated = resp?.data;
-
-                        setComments((prevComments) =>
-                          prevComments.map((comment) =>
-                            comment.id === commentId
-                              ? { ...comment, ...updated }
-                              : comment,
-                          ),
-                        );
-                      } catch (err) {
-                        console.log("Error editing comment: ", err);
-                      }
-                    }}
-                    onCommentDelete={async (commentId) => {
-                      try {
-                        await axios.delete(
-                          `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
-                          { data: { userId } },
-                        );
-
-                        setComments((prevComments) =>
-                          prevComments.filter((c) => c.id !== commentId),
-                        );
-                        await fetchRecipe();
-                      } catch (err) {
-                        console.log("Error deleting comment: ", err);
-                      }
-                    }}
-                  />
-                ))}
+              <div className="recipe-details-content-right">
+                <IngredientsList ingredients={recipeIngredients} />
+                <ChatBox
+                  recipeTitle={recipeTitle}
+                  recipeInstructions={recipeInstructions}
+                  recipeIngredients={recipeIngredients}
+                />
               </div>
-            </div>
-
-            <div className="recipe-details-content-right">
-              <IngredientsList ingredients={recipeIngredients} />
-              <ChatBox
-                recipeTitle={recipeTitle}
-                recipeInstructions={recipeInstructions}
-                recipeIngredients={recipeIngredients}
-              />
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
