@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import TuneIcon from "@mui/icons-material/Tune";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../styles/Recipes.css";
 
 const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
@@ -50,18 +50,35 @@ const CATEGORY_OPTIONS = [
 ];
 
 // Consistent formatting for recipe data
-function buildMealSummary(meal) {
+function parseMealIngredients(meal) {
   const ingredients = [];
 
-  // Extract ingredients and measurements into a single list
   for (let index = 1; index <= 20; index += 1) {
     const ingredient = meal[`strIngredient${index}`]?.trim();
     const measurement = meal[`strMeasure${index}`]?.trim();
 
     if (ingredient) {
-      ingredients.push([measurement, ingredient].filter(Boolean).join(" "));
+      ingredients.push({
+        ingredient,
+        measurement: measurement || "",
+      });
     }
   }
+
+  return ingredients;
+}
+
+function parseMealTags(meal) {
+  return meal.strTags
+    ? meal.strTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : [];
+}
+
+function buildMealSummary(meal) {
+  const ingredients = parseMealIngredients(meal);
 
   // Grab snippet of instructions for description
   const instructionExcerpt = meal.strInstructions
@@ -72,6 +89,7 @@ function buildMealSummary(meal) {
     id: meal.idMeal,
     title: meal.strMeal,
     source: meal.strCategory || "MealDB",
+    category: meal.strCategory || "",
     description:
       ingredients.length > 0
         ? `${instructionExcerpt}${meal.strInstructions?.length > 140 ? "..." : ""}`
@@ -79,6 +97,10 @@ function buildMealSummary(meal) {
     image: meal.strMealThumb,
     area: meal.strArea,
     ingredients,
+    instructions: meal.strInstructions || "No instructions available.",
+    tags: parseMealTags(meal),
+    youtube: meal.strYoutube || "",
+    sourceUrl: meal.strSource || "",
   };
 }
 
@@ -94,6 +116,11 @@ export default function Recipes() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [selectedRecipeOpen, setSelectedRecipeOpen] = useState(false);
+  const [selectedRecipeLoading, setSelectedRecipeLoading] = useState(false);
+  const [selectedRecipeError, setSelectedRecipeError] = useState("");
+  const selectedRecipeAbortRef = useRef(null);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -163,7 +190,11 @@ export default function Recipes() {
               card.title.toLowerCase().includes(normalizedSearch) ||
               card.description.toLowerCase().includes(normalizedSearch) ||
               card.ingredients.some((ingredient) =>
-                ingredient.toLowerCase().includes(normalizedSearch),
+                [ingredient.measurement, ingredient.ingredient]
+                  .filter(Boolean)
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(normalizedSearch),
               )
             );
           });
@@ -254,6 +285,60 @@ export default function Recipes() {
     setFilterDialogOpen(false);
   }
 
+  // Load full recipe details when a card is clicked
+  async function openRecipeDetails(recipe) {
+    if (selectedRecipeAbortRef.current) {
+      selectedRecipeAbortRef.current.abort();
+    }
+
+    const abortController = new AbortController();
+    selectedRecipeAbortRef.current = abortController;
+
+    setSelectedRecipe(recipe);
+    setSelectedRecipeError("");
+    setSelectedRecipeOpen(true);
+    setSelectedRecipeLoading(true);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/lookup.php?i=${encodeURIComponent(recipe.id)}`,
+        {
+          signal: abortController.signal,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("MealDB lookup failed.");
+      }
+
+      const data = await response.json();
+      const detailedMeal = data.meals?.[0];
+
+      if (detailedMeal) {
+        setSelectedRecipe(buildMealSummary(detailedMeal));
+      }
+    } catch (fetchError) {
+      if (fetchError.name !== "AbortError") {
+        setSelectedRecipeError("We could not load the full recipe details right now.");
+      }
+    } finally {
+      if (!abortController.signal.aborted) {
+        setSelectedRecipeLoading(false);
+      }
+    }
+  }
+
+  function closeRecipeDetails() {
+    if (selectedRecipeAbortRef.current) {
+      selectedRecipeAbortRef.current.abort();
+      selectedRecipeAbortRef.current = null;
+    }
+
+    setSelectedRecipeOpen(false);
+    setSelectedRecipeLoading(false);
+    setSelectedRecipeError("");
+  }
+
   return (
     <Box className="recipes-page">
       <Box className="recipes-page__inner">
@@ -270,7 +355,7 @@ export default function Recipes() {
           <TextField
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search recipes"
+            placeholder="Search recipes by name"
             fullWidth
             className="recipes-page__search"
             InputProps={{
@@ -329,7 +414,7 @@ export default function Recipes() {
           <DialogTitle>Filter recipes</DialogTitle>
           <DialogContent className="recipes-page__filter-dialog-content">
             <Typography variant="body2" className="recipes-page__filter-dialog-copy">
-              Choose whether to filter by meal category or main ingredient.
+              Filter by category, main ingredient, or location.
             </Typography>
             <Select
               fullWidth
@@ -417,6 +502,127 @@ export default function Recipes() {
             </Button>
           </DialogActions>
         </Dialog>
+        {/* Cards for displaying full recipe details */}
+        <Dialog
+          open={selectedRecipeOpen}
+          onClose={closeRecipeDetails}
+          fullWidth
+          maxWidth="md"
+          scroll="paper"
+          className="recipes-page__recipe-dialog"
+        >
+          <DialogTitle className="recipes-page__recipe-dialog-title">
+            {selectedRecipe?.title || "Recipe details"}
+          </DialogTitle>
+          <DialogContent className="recipes-page__recipe-dialog-content">
+            {selectedRecipeLoading ? (
+              <Box className="recipes-page__recipe-dialog-state">
+                <CircularProgress size={34} />
+                <Typography variant="body2" className="recipes-page__recipe-dialog-state-text">
+                  Loading recipe details...
+                </Typography>
+              </Box>
+            ) : selectedRecipe ? (
+              <Box className="recipes-page__recipe-dialog-layout">
+                <Box className="recipes-page__recipe-dialog-hero">
+                  <Box
+                    component="img"
+                    src={selectedRecipe.image}
+                    alt={selectedRecipe.title}
+                    className="recipes-page__recipe-dialog-image"
+                  />
+
+                  <Box className="recipes-page__recipe-dialog-meta">
+                    <Box className="recipes-page__recipe-dialog-chip-row">
+                      {selectedRecipe.source ? (
+                        <Chip label={selectedRecipe.source} className="recipes-page__recipe-dialog-chip" />
+                      ) : null}
+                      {selectedRecipe.area ? (
+                        <Chip label={selectedRecipe.area} className="recipes-page__recipe-dialog-chip" />
+                      ) : null}
+                      {selectedRecipe.category ? (
+                        <Chip label={selectedRecipe.category} className="recipes-page__recipe-dialog-chip" />
+                      ) : null}
+                    </Box>
+
+                    {selectedRecipe.tags.length > 0 ? (
+                      <Box className="recipes-page__recipe-dialog-chip-row">
+                        {selectedRecipe.tags.map((tag) => (
+                          <Chip key={tag} label={tag} variant="outlined" className="recipes-page__recipe-dialog-tag" />
+                        ))}
+                      </Box>
+                    ) : null}
+                  </Box>
+                </Box>
+
+                <Box className="recipes-page__recipe-dialog-grid">
+                  <Box className="recipes-page__recipe-dialog-panel">
+                    <Typography variant="h5" component="h3" className="recipes-page__recipe-dialog-panel-title">
+                      Ingredients
+                    </Typography>
+                    <Box className="recipes-page__recipe-dialog-ingredients">
+                      {selectedRecipe.ingredients.map((ingredient) => (
+                        <Box key={`${ingredient.ingredient}-${ingredient.measurement}`} className="recipes-page__recipe-dialog-ingredient-row">
+                          <Typography variant="body2" className="recipes-page__recipe-dialog-measurement">
+                            {ingredient.measurement || "-"}
+                          </Typography>
+                          <Typography variant="body2" className="recipes-page__recipe-dialog-ingredient">
+                            {ingredient.ingredient}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+
+                  <Box className="recipes-page__recipe-dialog-panel recipes-page__recipe-dialog-panel--wide">
+                    <Typography variant="h5" component="h3" className="recipes-page__recipe-dialog-panel-title">
+                      Instructions
+                    </Typography>
+                    <Typography variant="body1" className="recipes-page__recipe-dialog-instructions">
+                      {selectedRecipe.instructions}
+                    </Typography>
+
+                    {selectedRecipe.youtube || selectedRecipe.sourceUrl ? (
+                      <Box className="recipes-page__recipe-dialog-links">
+                        {selectedRecipe.youtube ? (
+                          <Button
+                            component="a"
+                            href={selectedRecipe.youtube}
+                            target="_blank"
+                            rel="noreferrer"
+                            variant="outlined"
+                          >
+                            Watch video
+                          </Button>
+                        ) : null}
+                        {selectedRecipe.sourceUrl ? (
+                          <Button
+                            component="a"
+                            href={selectedRecipe.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            variant="outlined"
+                          >
+                            Recipe source
+                          </Button>
+                        ) : null}
+                      </Box>
+                    ) : null}
+                  </Box>
+                </Box>
+
+                {selectedRecipeError ? (
+                  <Typography variant="body2" className="recipes-page__recipe-dialog-error">
+                    {selectedRecipeError}
+                  </Typography>
+                ) : null}
+              </Box>
+            ) : null}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeRecipeDetails}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
         {recipeCollection === "community" ? (
           <Box className="recipes-page__state">
@@ -447,11 +653,13 @@ export default function Recipes() {
           <Box className="recipes-page__grid">
             {recipes.map((card) => (
               <Card key={card.id} elevation={0} className="recipes-page__card">
-                <CardActionArea className="recipes-page__card-action">
+                <CardActionArea className="recipes-page__card-action" onClick={() => openRecipeDetails(card)}>
                   <CardContent className="recipes-page__card-content">
                     <Box
+                      component="img"
+                      src={card.image}
+                      alt={card.title}
                       className="recipes-page__card-image"
-                      sx={{ backgroundImage: `url(${card.image})` }}
                     />
 
                     <Box className="recipes-page__card-meta">

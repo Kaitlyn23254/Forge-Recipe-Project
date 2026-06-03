@@ -179,6 +179,7 @@
 
 .recipes-page__card-action {
   height: 100%;
+  display: flex;
   align-items: stretch;
 }
 
@@ -191,12 +192,12 @@
 }
 
 .recipes-page__card-image {
-  height: 120px;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  min-height: 150px;
   border-radius: 18px;
   background-color: #ead7c8;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+  object-fit: cover;
   border: 1px solid rgba(58, 152, 185, 0.12);
 }
 
@@ -204,6 +205,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .recipes-page__card-chip {
@@ -221,6 +223,135 @@
 }
 
 .recipes-page__card-description {
+  color: #6c5f54 !important;
+}
+
+.recipes-page__recipe-dialog .MuiPaper-root {
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fffaf2 0%, #fff4e6 100%);
+}
+
+.recipes-page__recipe-dialog-title {
+  font-weight: 800 !important;
+  letter-spacing: -0.4px !important;
+}
+
+.recipes-page__recipe-dialog-content {
+  padding-top: 8px !important;
+}
+
+.recipes-page__recipe-dialog-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.recipes-page__recipe-dialog-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recipes-page__recipe-dialog-image {
+  width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  border-radius: 22px;
+  border: 1px solid rgba(58, 152, 185, 0.12);
+  background: #ead7c8;
+}
+
+.recipes-page__recipe-dialog-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipes-page__recipe-dialog-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.recipes-page__recipe-dialog-chip {
+  font-weight: 700 !important;
+  background-color: rgba(232, 213, 196, 0.82) !important;
+}
+
+.recipes-page__recipe-dialog-tag {
+  border-color: rgba(58, 152, 185, 0.22) !important;
+  color: #2f2418 !important;
+}
+
+.recipes-page__recipe-dialog-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+.recipes-page__recipe-dialog-panel {
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(58, 152, 185, 0.12);
+}
+
+.recipes-page__recipe-dialog-panel--wide {
+  min-width: 0;
+}
+
+.recipes-page__recipe-dialog-panel-title {
+  margin-bottom: 14px !important;
+  font-weight: 800 !important;
+}
+
+.recipes-page__recipe-dialog-ingredients {
+  display: grid;
+  gap: 10px;
+}
+
+.recipes-page__recipe-dialog-ingredient-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(232, 213, 196, 0.28);
+}
+
+.recipes-page__recipe-dialog-measurement {
+  font-weight: 700 !important;
+  color: #3a98b9 !important;
+}
+
+.recipes-page__recipe-dialog-ingredient {
+  color: #2f2418 !important;
+}
+
+.recipes-page__recipe-dialog-instructions {
+  white-space: pre-line;
+  color: #4c3f34 !important;
+  line-height: 1.75 !important;
+}
+
+.recipes-page__recipe-dialog-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.recipes-page__recipe-dialog-state {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipes-page__recipe-dialog-state-text,
+.recipes-page__recipe-dialog-error {
   color: #6c5f54 !important;
 }
 
@@ -255,6 +386,11 @@
 @media (min-width: 900px) {
   .recipes-page__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .recipes-page__recipe-dialog-grid {
+    grid-template-columns: 0.85fr 1.15fr;
+    align-items: start;
   }
 }
 
