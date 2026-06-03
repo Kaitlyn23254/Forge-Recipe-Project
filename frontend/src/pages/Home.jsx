@@ -8,7 +8,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import SearchIcon from "@mui/icons-material/Search";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -24,7 +24,7 @@ function Home() {
 
         for (let i = 0; i < 3; i++) {
           const response = await fetch(
-            "https://www.themealdb.com/api/json/v1/1/random.php"
+            "https://www.themealdb.com/api/json/v1/1/random.php",
           );
 
           const data = await response.json();

@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
-import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router";
 import Recipes from "./pages/Recipes.jsx";
 import RecipeDetails from "./pages/RecipeDetails.jsx";
 import MyRecipes from "./pages/MyRecipes.jsx";
