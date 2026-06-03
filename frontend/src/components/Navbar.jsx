@@ -1,8 +1,66 @@
-import { Box, Button, Container, Stack, Typography } from "@mui/material";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Container,
+  Menu,
+  MenuItem,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { Link, useNavigate } from "react-router";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
+import { AUTH_CHANGE_EVENT, clearStoredUser, getStoredUser } from "../utility/auth.js";
 
 function Navbar() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(() => getStoredUser());
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const menuOpen = Boolean(anchorEl);
+  const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    function handleAuthChange() {
+      setUser(getStoredUser());
+    }
+
+    function handleStorageChange(event) {
+      if (event.key === "cookit-user") {
+        handleAuthChange();
+      }
+    }
+
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  function handleAccountClick(event) {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    setAnchorEl(event.currentTarget);
+  }
+
+  function handleMenuClose() {
+    setAnchorEl(null);
+  }
+
+  function handleLogout() {
+    clearStoredUser();
+    handleMenuClose();
+    navigate("/");
+  }
+
+  const accountLabel = user?.name || user?.email?.split("@")[0] || "Account";
+
   return (
     <Box sx={{ backgroundColor: "#1F6F78", color: "white", py: 2 }}>
       <Container maxWidth={false} sx={{ px: 4 }}>
@@ -43,13 +101,20 @@ function Navbar() {
             <Typography component={Link} to="/create-recipe" sx={navLink}>
               Create Recipe
             </Typography>
+            {isAdmin ? (
+              <Typography component={Link} to="/admin" sx={navLink}>
+                Admin
+              </Typography>
+            ) : null}
           </Stack>
 
           <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
             <Button
-              component={Link}
-              to="/login"
+              onClick={handleAccountClick}
               variant="contained"
+              aria-controls={menuOpen ? "account-menu" : undefined}
+              aria-haspopup="true"
+              aria-expanded={menuOpen ? "true" : undefined}
               sx={{
                 backgroundColor: "#F2D8A7",
                 color: "#1F1F1F",
@@ -58,8 +123,21 @@ function Navbar() {
                 "&:hover": { backgroundColor: "#E8C98F" },
               }}
             >
-              Login
+              {user ? accountLabel : "Login"}
             </Button>
+            <Menu
+              id="account-menu"
+              anchorEl={anchorEl}
+              open={menuOpen}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem disabled sx={{ opacity: 1, fontWeight: 700 }}>
+                {accountLabel}
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </Menu>
           </Box>
         </Box>
       </Container>

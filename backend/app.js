@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import { router as commentsRouter } from "./routes/comments.js";
+import { router as usersRouter } from "./routes/users.js";
 import { router as savedRecipesRouter } from "./routes/savedRecipes.js";
 import { router as chatRouter } from "./routes/chat.js";
 
@@ -15,6 +16,7 @@ const port = 5005;
 app.use(express.json());
 app.use(cors());
 app.use("/comments", commentsRouter);
+app.use("/users", usersRouter);
 app.use("/saved-recipes", savedRecipesRouter);
 app.use("/chat", chatRouter);
 
