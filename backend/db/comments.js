@@ -12,8 +12,23 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase.js";
+import {
+  isValidRatingValue,
+  recomputeRecipeAverageRating,
+} from "./recipes.js";
 
 const commentsCollection = collection(db, "comments");
+
+function parseOptionalRating(rating) {
+  if (rating === undefined || rating === null || rating === "") {
+    return null;
+  }
+  const n = Number(rating);
+  if (!isValidRatingValue(n)) {
+    throw new Error("Invalid rating: must be between 0.5 and 5 in 0.5 steps");
+  }
+  return n;
+}
 
 // { recipeId: "recipeId",
 // userId: "userId",
@@ -62,13 +77,19 @@ async function getCommentsByRecipeId(recipeId, userId) {
 }
 
 async function postComment({ recipeId, userId, text, rating }) {
+  const parsedRating = parseOptionalRating(rating);
+
   const commentData = {
     recipeId,
     userId,
     text,
-    rating,
     createdAt: serverTimestamp(),
   };
+
+  if (parsedRating !== null) {
+    commentData.rating = parsedRating;
+  }
+
   // create comment doc and initialize likes metadata in a batch
   const commentRef = doc(collection(db, "comments"));
   const likesMetaRef = doc(collection(commentRef, "likes"), "metadata");
@@ -79,18 +100,23 @@ async function postComment({ recipeId, userId, text, rating }) {
 
   await batch.commit();
 
+  if (parsedRating !== null) {
+    await recomputeRecipeAverageRating(recipeId);
+  }
+
   const [commentSnap, metaSnap] = await Promise.all([
     getDoc(commentRef),
     getDoc(likesMetaRef),
   ]);
 
   const created = commentSnap.exists() ? commentSnap.data() : commentData;
-  const likes = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+  const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
 
   return {
     id: commentRef.id,
     ...created,
-    likes,
+    likeCount,
+    likedByUser: false,
   };
 }
 
@@ -209,6 +235,11 @@ async function deleteComment({ commentId, userId }) {
   batch.delete(commentRef);
 
   await batch.commit();
+
+  const recipeId = commentData?.recipeId;
+  if (recipeId) {
+    await recomputeRecipeAverageRating(recipeId);
+  }
 
   return commentData;
 }
