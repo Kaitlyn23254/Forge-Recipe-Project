@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import { router as commentsRouter } from "./routes/comments.js";
 import { router as savedRecipesRouter } from "./routes/savedRecipes.js";
+import { router as chatRouter } from "./routes/chat.js";
 
 // Create an instance of the express application
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use(cors());
 app.use("/comments", commentsRouter);
 app.use("/saved-recipes", savedRecipesRouter);
+app.use("/chat", chatRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
