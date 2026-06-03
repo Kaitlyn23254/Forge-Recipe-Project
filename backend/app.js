@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import { router as commentsRouter } from "./routes/comments.js";
+import { router as chatRouter } from "./routes/chat.js";
 
 // Create an instance of the express application
 const app = express();
@@ -13,6 +14,7 @@ const port = 5005;
 app.use(express.json());
 app.use(cors());
 app.use("/comments", commentsRouter);
+app.use("/chat", chatRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
