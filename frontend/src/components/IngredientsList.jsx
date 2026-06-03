@@ -32,14 +32,17 @@ export default function IngredientsList({ ingredients }) {
         }}
       >
         {ingredients.map((ingredient, index) => (
-          <>
-            <Box key={`measurement-${ingredient.measurement}-${index}`}>
+          <Box
+            key={`${ingredient.ingredient}-${ingredient.measurement}-${index}`}
+            sx={{ display: "contents" }}
+          >
+            <Box>
               {ingredient.measurement}
             </Box>
-            <Box key={`ingredient-${ingredient.ingredient}-${index}`}>
+            <Box>
               {ingredient.ingredient}
             </Box>
-          </>
+          </Box>
         ))}
       </Box>
     </div>
