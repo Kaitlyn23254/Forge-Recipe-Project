@@ -1,3 +1,293 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import axios from "axios";
+import {
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Menu,
+  MenuItem,
+  TextField,
+  Typography,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import SearchIcon from "@mui/icons-material/Search";
+import "../styles/MyRecipes.css";
+
+const HARDCODED_USER_ID = "X7CtVm0P6YeWybH4ZL75";
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+
 export default function MyRecipes() {
-  return <p>This is the my recipes page</p>;
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState("created");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [createdRecipes, setCreatedRecipes] = useState([]);
+  const [savedRecipes, setSavedRecipes] = useState([]);
+  const [bookmarkedRecipeIds, setBookmarkedRecipeIds] = useState(new Set());
+  const [isLoading, setIsLoading] = useState(false);
+  const [menuAnchorElement, setMenuAnchorElement] = useState(null);
+  const [menuTargetRecipeId, setMenuTargetRecipeId] = useState(null);
+
+  async function fetchCreatedRecipes() {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/recipes/user/${HARDCODED_USER_ID}`);
+      setCreatedRecipes(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Error fetching created recipes:", err);
+      setCreatedRecipes([]);
+    }
+    setIsLoading(false);
+  }
+
+  async function fetchSavedRecipes() {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks`);
+      setSavedRecipes(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Error fetching saved recipes:", err);
+      setSavedRecipes([]);
+    }
+    setIsLoading(false);
+  }
+
+  async function fetchBookmarkedIds() {
+    try {
+      const response = await axios.get(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/ids`);
+      setBookmarkedRecipeIds(new Set(Array.isArray(response.data) ? response.data : []));
+    } catch (err) {
+      console.error("Error fetching bookmarked ids:", err);
+    }
+  }
+
+  useEffect(() => {
+    fetchCreatedRecipes();
+    fetchBookmarkedIds();
+  }, []);
+
+  function handleSelectCreatedTab() {
+    setActiveTab("created");
+  }
+
+  function handleSelectSavedTab() {
+    setActiveTab("saved");
+    fetchSavedRecipes();
+  }
+
+  function handleSearchChange(event) {
+    setSearchQuery(event.target.value);
+  }
+
+  function handleNavigateToCreate() {
+    navigate("/create-recipe");
+  }
+
+  function handleCardClick(event) {
+    const recipeId = event.currentTarget.dataset.recipeId;
+    navigate(`/user-recipes/${recipeId}`);
+  }
+
+  async function handleBookmarkClick(event) {
+    event.stopPropagation();
+    const recipeId = event.currentTarget.dataset.recipeId;
+    const isCurrentlyBookmarked = bookmarkedRecipeIds.has(recipeId);
+
+    if (isCurrentlyBookmarked) {
+      await axios.delete(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/${recipeId}`);
+      setBookmarkedRecipeIds((previousIds) => {
+        const updatedIds = new Set(previousIds);
+        updatedIds.delete(recipeId);
+        return updatedIds;
+      });
+      if (activeTab === "saved") {
+        setSavedRecipes((previousRecipes) =>
+          previousRecipes.filter((savedRecipe) => savedRecipe.id !== recipeId),
+        );
+      }
+    } else {
+      await axios.post(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/${recipeId}`);
+      setBookmarkedRecipeIds((previousIds) => new Set([...previousIds, recipeId]));
+    }
+  }
+
+  function handleOpenMenu(event) {
+    event.stopPropagation();
+    const recipeId = event.currentTarget.dataset.recipeId;
+    setMenuAnchorElement(event.currentTarget);
+    setMenuTargetRecipeId(recipeId);
+  }
+
+  function handleCloseMenu() {
+    setMenuAnchorElement(null);
+    setMenuTargetRecipeId(null);
+  }
+
+  async function handleDeleteRecipe() {
+    const recipeId = menuTargetRecipeId;
+    handleCloseMenu();
+    await axios.delete(`${BASE_URL}/recipes/${recipeId}`, {
+      data: { userId: HARDCODED_USER_ID },
+    });
+    setCreatedRecipes((previousRecipes) =>
+      previousRecipes.filter((createdRecipe) => createdRecipe.id !== recipeId),
+    );
+  }
+
+  function handleEditRecipe() {
+    const recipeId = menuTargetRecipeId;
+    handleCloseMenu();
+    navigate(`/create-recipe?edit=${recipeId}`);
+  }
+
+  function getDisplayedRecipes() {
+    const recipeList = activeTab === "created" ? createdRecipes : savedRecipes;
+    if (!Array.isArray(recipeList)) return [];
+    if (!searchQuery.trim()) return recipeList;
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return recipeList.filter((recipe) =>
+      recipe.title.toLowerCase().includes(lowerCaseQuery),
+    );
+  }
+
+  const displayedRecipes = getDisplayedRecipes();
+
+  return (
+    <div className="my-recipes-page">
+      <div className="my-recipes-page__inner">
+        <div className="my-recipes-page__header">
+          <Typography variant="h4" className="my-recipes-page__title">
+            My Recipes
+          </Typography>
+        </div>
+
+        <div className="my-recipes-page__controls">
+          <div className="my-recipes-page__chips">
+            <Chip
+              label="My Recipes"
+              onClick={handleSelectCreatedTab}
+              className={`my-recipes-page__chip ${activeTab === "created" ? "my-recipes-page__chip--active" : ""}`}
+              variant="outlined"
+            />
+            <Chip
+              label="Saved"
+              onClick={handleSelectSavedTab}
+              className={`my-recipes-page__chip ${activeTab === "saved" ? "my-recipes-page__chip--active" : ""}`}
+              variant="outlined"
+            />
+          </div>
+
+          <div className="my-recipes-page__search-wrap">
+            <TextField
+              placeholder="Search recipes..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              size="small"
+              className="my-recipes-page__search"
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon className="my-recipes-page__search-icon" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <IconButton
+              className="my-recipes-page__add-btn"
+              onClick={handleNavigateToCreate}
+            >
+              <AddIcon />
+            </IconButton>
+          </div>
+        </div>
+
+        {isLoading && (
+          <div className="my-recipes-page__empty">
+            <CircularProgress />
+          </div>
+        )}
+
+        {!isLoading && displayedRecipes.length === 0 && (
+          <div className="my-recipes-page__empty">
+            <Typography variant="body1">
+              {activeTab === "created"
+                ? "You haven't created any recipes yet."
+                : "You haven't saved any recipes yet."}
+            </Typography>
+          </div>
+        )}
+
+        {!isLoading && displayedRecipes.length > 0 && (
+          <div className="my-recipes-page__grid">
+            {displayedRecipes.map((recipe) => (
+              <div
+                key={recipe.id}
+                className="my-recipes-page__card"
+                data-recipe-id={recipe.id}
+                onClick={handleCardClick}
+              >
+                <img
+                  src={recipe.imageUrl || "https://via.placeholder.com/160x160?text=No+Image"}
+                  alt={recipe.title}
+                  className="my-recipes-page__card-image"
+                />
+                <div className="my-recipes-page__card-body">
+                  <Typography className="my-recipes-page__card-title">
+                    {recipe.title}
+                  </Typography>
+                  <div className="my-recipes-page__card-footer">
+                    <Typography className="my-recipes-page__card-time">
+                      <AccessTimeIcon style={{ fontSize: "0.9rem" }} />
+                      {recipe.cookingTime || "—"}
+                    </Typography>
+                    <div className="my-recipes-page__card-actions">
+                      {activeTab === "created" && (
+                        <IconButton
+                          size="small"
+                          className="my-recipes-page__menu-btn"
+                          data-recipe-id={recipe.id}
+                          onClick={handleOpenMenu}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      <IconButton
+                        size="small"
+                        className="my-recipes-page__bookmark-btn"
+                        data-recipe-id={recipe.id}
+                        onClick={handleBookmarkClick}
+                      >
+                        {bookmarkedRecipeIds.has(recipe.id) ? (
+                          <BookmarkIcon fontSize="small" />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Menu
+          anchorEl={menuAnchorElement}
+          open={Boolean(menuAnchorElement)}
+          onClose={handleCloseMenu}
+        >
+          <MenuItem onClick={handleEditRecipe}>Edit</MenuItem>
+          <MenuItem onClick={handleDeleteRecipe}>Delete</MenuItem>
+        </Menu>
+      </div>
+    </div>
+  );
 }
