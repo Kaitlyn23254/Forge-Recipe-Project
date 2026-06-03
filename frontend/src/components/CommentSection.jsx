@@ -1,9 +1,14 @@
+import Rating from "@mui/material/Rating";
+import Typography from "@mui/material/Typography";
+
 import "./styles/Comment.css";
 
 export default function CommentSection({
   commentText,
   setCommentText,
   handleSubmit,
+  rating,
+  setRating,
 }) {
   return (
     <div className="comment-section recipe-details-panel">
@@ -22,6 +27,18 @@ export default function CommentSection({
           Comment
         </button>
       </form>
+      <div className="comment-section__rating">
+        <Typography variant="body2" component="span" className="comment-section__rating-label">
+          Rating (optional)
+        </Typography>
+        <Rating
+          name="comment-rating"
+          value={rating ?? null}
+          precision={0.5}
+          max={5}
+          onChange={(_, value) => setRating(value)}
+        />
+      </div>
     </div>
   );
 }
