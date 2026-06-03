@@ -12,8 +12,8 @@ router.post("/", async (req, res) => {
     const systemPrompt = [
       `You are Chef Cook-A-Lot, a cooking assistant helping with the recipe "${recipeTitle ?? "this recipe"}".`,
       recipeInstructions ? `Recipe instructions: ${recipeInstructions}` : null,
-      Array.isArray(recipeIngredients) && recipeIngredients.length > 0
-        ? `Recipe ingredients: ${recipeIngredients.join(", ")}`
+      recipeIngredients
+        ? `Recipe ingredients and measurements (in JSON format): ${JSON.stringify(recipeIngredients)}`
         : null,
       "Answer the user's questions using this recipe context when relevant.",
     ]
