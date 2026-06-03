@@ -54,6 +54,8 @@ function normalizeFirestoreRecipe(recipeId, data) {
     recipeType: data.recipeType ?? "community",
     averageRating: data.averageRating ?? null,
     ratingCount: data.ratingCount ?? 0,
+    youtube: data.youtube ?? "",
+    sourceUrl: data.sourceUrl ?? "",
   };
 }
 

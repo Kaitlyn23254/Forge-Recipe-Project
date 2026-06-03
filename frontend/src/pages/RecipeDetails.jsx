@@ -6,10 +6,12 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import { timestampToString } from "../utility/timestampToString";
 
 import "../styles/RecipeDetails.css";
+import "../styles/Recipes.css";
 import CommentSection from "../components/CommentSection";
 import Comment from "../components/Comment";
 import ChatBox from "../components/ChatBox";
@@ -381,6 +383,32 @@ export default function RecipeDetails() {
                       <li key={`${idx}-${instruction}`}>{instruction}</li>
                     ))}
                   </ol>
+                  {recipe?.youtube || recipe?.sourceUrl ? (
+                    <div className="recipes-page__recipe-dialog-links">
+                      {recipe?.youtube ? (
+                        <Button
+                          component="a"
+                          href={recipe.youtube}
+                          target="_blank"
+                          rel="noreferrer"
+                          variant="outlined"
+                        >
+                          Watch video
+                        </Button>
+                      ) : null}
+                      {recipe?.sourceUrl ? (
+                        <Button
+                          component="a"
+                          href={recipe.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          variant="outlined"
+                        >
+                          Recipe source
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <CommentSection
                   commentText={commentText}

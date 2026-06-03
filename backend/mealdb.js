@@ -66,6 +66,8 @@ function normalizeMealToRecipe(meal) {
     instructions: parseInstructionsText(meal.strInstructions),
     ingredients: parseMealIngredients(meal),
     recipeType: "official",
+    youtube: meal.strYoutube || "",
+    sourceUrl: meal.strSource || "",
   };
 }
 
