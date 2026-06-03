@@ -1,0 +1,132 @@
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  increment,
+  query,
+  runTransaction,
+  serverTimestamp,
+  writeBatch,
+  where,
+} from "firebase/firestore";
+import { db } from "../firebase.js";
+
+const commentsCollection = collection(db, "comments");
+
+// { recipeId: "recipeId",
+// userId: "userId",
+// text: "Comment text",
+// rating: 5,
+// likeCount: 0}
+
+async function getCommentsByRecipeId(recipeId) {
+  const commentsQuery = query(
+    commentsCollection,
+    where("recipeId", "==", recipeId),
+  );
+
+  const snapshot = await getDocs(commentsQuery);
+  const comments = snapshot.docs.map((commentDoc) => ({
+    id: commentDoc.id,
+    ...commentDoc.data(),
+  }));
+
+  // Get like count from the likes subcollection
+  const withLikes = await Promise.all(
+    comments.map(async (c) => {
+      try {
+        const metaRef = doc(db, "comments", c.id, "likes", "metadata");
+        const metaSnap = await getDoc(metaRef);
+        const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+        return { ...c, likeCount };
+      } catch (err) {
+        return { ...c, likeCount: 0 };
+      }
+    }),
+  );
+
+  // Sort by descending likes
+  withLikes.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+
+  return withLikes;
+}
+
+async function postComment({ recipeId, userId, text, rating }) {
+  const commentData = {
+    recipeId,
+    userId,
+    text,
+    rating,
+    createdAt: serverTimestamp(),
+  };
+  // create comment doc and initialize likes metadata in a batch
+  const commentRef = doc(collection(db, "comments"));
+  const likesMetaRef = doc(collection(commentRef, "likes"), "metadata");
+  const batch = writeBatch(db);
+
+  batch.set(commentRef, commentData);
+  batch.set(likesMetaRef, { likes: 0, createdAt: serverTimestamp() });
+
+  await batch.commit();
+
+  const [commentSnap, metaSnap] = await Promise.all([
+    getDoc(commentRef),
+    getDoc(likesMetaRef),
+  ]);
+
+  const created = commentSnap.exists() ? commentSnap.data() : commentData;
+  const likes = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+
+  return {
+    id: commentRef.id,
+    ...created,
+    likes,
+  };
+}
+
+async function addLike(commentId, userId) {
+  if (!commentId || !userId)
+    throw new Error("commentId and userId are required");
+
+  const likeRef = doc(db, "comments", commentId, "likes", userId);
+  const metaRef = doc(db, "comments", commentId, "likes", "metadata");
+
+  await runTransaction(db, async (tx) => {
+    const metaSnap = await tx.get(metaRef);
+    if (!metaSnap.exists()) {
+      tx.set(metaRef, { likes: 1, createdAt: serverTimestamp() });
+    } else {
+      tx.update(metaRef, { likes: increment(1) });
+    }
+    tx.set(likeRef, { createdAt: serverTimestamp() });
+  });
+
+  const updated = await getDoc(metaRef);
+  return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
+}
+
+async function removeLike(commentId, userId) {
+  if (!commentId || !userId)
+    throw new Error("commentId and userId are required");
+
+  const likeRef = doc(db, "comments", commentId, "likes", userId);
+  const metaRef = doc(db, "comments", commentId, "likes", "metadata");
+
+  await runTransaction(db, async (tx) => {
+    const metaSnap = await tx.get(metaRef);
+    if (metaSnap.exists()) {
+      const current = metaSnap.data().likes ?? 0;
+      const next = Math.max(0, current - 1);
+      tx.update(metaRef, { likes: next });
+    }
+    tx.delete(likeRef);
+  });
+
+  const updated = await getDoc(metaRef);
+  return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
+}
+
+export { getCommentsByRecipeId, postComment, addLike, removeLike };
