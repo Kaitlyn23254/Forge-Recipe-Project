@@ -5,7 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  increment,
   query,
   runTransaction,
   serverTimestamp,
@@ -22,7 +21,7 @@ const commentsCollection = collection(db, "comments");
 // rating: 5,
 // likeCount: 0}
 
-async function getCommentsByRecipeId(recipeId) {
+async function getCommentsByRecipeId(recipeId, userId) {
   const commentsQuery = query(
     commentsCollection,
     where("recipeId", "==", recipeId),
@@ -39,17 +38,25 @@ async function getCommentsByRecipeId(recipeId) {
     comments.map(async (c) => {
       try {
         const metaRef = doc(db, "comments", c.id, "likes", "metadata");
+        const userLikeRef = userId
+          ? doc(db, "comments", c.id, "likes", userId)
+          : null;
         const metaSnap = await getDoc(metaRef);
+        const userLikeSnap = userLikeRef ? await getDoc(userLikeRef) : null;
         const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
-        return { ...c, likeCount };
+        return {
+          ...c,
+          likeCount,
+          likedByUser: userLikeSnap ? userLikeSnap.exists() : false,
+        };
       } catch (err) {
-        return { ...c, likeCount: 0 };
+        return { ...c, likeCount: 0, likedByUser: false };
       }
     }),
   );
 
   // Sort by descending likes
-  withLikes.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+  withLikes.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
 
   return withLikes;
 }
@@ -87,46 +94,123 @@ async function postComment({ recipeId, userId, text, rating }) {
   };
 }
 
-async function addLike(commentId, userId) {
+async function likeComment(commentId, userId) {
   if (!commentId || !userId)
     throw new Error("commentId and userId are required");
 
+  const commentRef = doc(db, "comments", commentId);
   const likeRef = doc(db, "comments", commentId, "likes", userId);
   const metaRef = doc(db, "comments", commentId, "likes", "metadata");
 
   await runTransaction(db, async (tx) => {
+    const likeSnap = await tx.get(likeRef);
     const metaSnap = await tx.get(metaRef);
-    if (!metaSnap.exists()) {
-      tx.set(metaRef, { likes: 1, createdAt: serverTimestamp() });
+    if (likeSnap.exists()) {
+      if (metaSnap.exists()) {
+        const current = metaSnap.data().likes ?? 0;
+        const next = Math.max(0, current - 1);
+        tx.update(metaRef, { likes: next });
+      }
+      tx.delete(likeRef);
     } else {
-      tx.update(metaRef, { likes: increment(1) });
+      if (!metaSnap.exists()) {
+        tx.set(metaRef, { likes: 1, createdAt: serverTimestamp() });
+      } else {
+        tx.update(metaRef, { likes: (metaSnap.data().likes ?? 0) + 1 });
+      }
+      tx.set(likeRef, { createdAt: serverTimestamp() });
     }
-    tx.set(likeRef, { createdAt: serverTimestamp() });
   });
 
-  const updated = await getDoc(metaRef);
-  return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
+  const [commentSnap, metaSnap, likeSnap] = await Promise.all([
+    getDoc(commentRef),
+    getDoc(metaRef),
+    getDoc(likeRef),
+  ]);
+
+  const commentData = commentSnap.exists() ? commentSnap.data() : {};
+  const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+
+  return {
+    id: commentId,
+    ...commentData,
+    likeCount,
+    likedByUser: likeSnap.exists(),
+  };
 }
 
-async function removeLike(commentId, userId) {
-  if (!commentId || !userId)
-    throw new Error("commentId and userId are required");
+async function editComment({ commentId, userId, text }) {
+  if (!commentId || !userId || !text) {
+    throw new Error("commentId, userId and text are required");
+  }
 
-  const likeRef = doc(db, "comments", commentId, "likes", userId);
-  const metaRef = doc(db, "comments", commentId, "likes", "metadata");
+  const commentRef = doc(db, "comments", commentId);
 
   await runTransaction(db, async (tx) => {
-    const metaSnap = await tx.get(metaRef);
-    if (metaSnap.exists()) {
-      const current = metaSnap.data().likes ?? 0;
-      const next = Math.max(0, current - 1);
-      tx.update(metaRef, { likes: next });
-    }
-    tx.delete(likeRef);
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists()) throw new Error("Comment not found");
+    const data = commentSnap.data();
+    if (data.userId !== userId) throw new Error("You can only edit your own comment");
+    tx.update(commentRef, { text, updatedAt: serverTimestamp() });
   });
 
-  const updated = await getDoc(metaRef);
-  return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
+  const [commentSnap, metaSnap, userLikeSnap] = await Promise.all([
+    getDoc(commentRef),
+    getDoc(doc(db, "comments", commentId, "likes", "metadata")),
+    getDoc(doc(db, "comments", commentId, "likes", userId)),
+  ]);
+
+  const commentData = commentSnap.exists() ? commentSnap.data() : {};
+  const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
+
+  return {
+    id: commentId,
+    ...commentData,
+    likeCount,
+    likedByUser: userLikeSnap.exists(),
+  };
 }
 
-export { getCommentsByRecipeId, postComment, addLike, removeLike };
+async function deleteComment({ commentId, userId }) {
+  if (!commentId || !userId) {
+    throw new Error("commentId and userId are required");
+  }
+
+  const commentRef = doc(db, "comments", commentId);
+
+  let commentData = null;
+
+  await runTransaction(db, async (tx) => {
+    const commentSnap = await tx.get(commentRef);
+    if (!commentSnap.exists()) throw new Error("Comment not found");
+    const data = commentSnap.data();
+    if (data.userId !== userId) throw new Error("You can only delete your own comment");
+    commentData = { id: commentId, ...data };
+  });
+
+  // delete likes and replies (and their likes) in batches
+  const likesCol = collection(db, "comments", commentId, "likes");
+  const likesSnapshot = await getDocs(likesCol);
+  const repliesCol = collection(db, "comments", commentId, "replies");
+  const repliesSnapshot = await getDocs(repliesCol);
+
+  const batch = writeBatch(db);
+
+  likesSnapshot.docs.forEach((d) => batch.delete(d.ref));
+
+  // delete replies and their likes
+  for (const replyDoc of repliesSnapshot.docs) {
+    const replyId = replyDoc.id;
+    const replyLikes = await getDocs(collection(db, "comments", commentId, "replies", replyId, "likes"));
+    replyLikes.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(replyDoc.ref);
+  }
+
+  batch.delete(commentRef);
+
+  await batch.commit();
+
+  return commentData;
+}
+
+export { getCommentsByRecipeId, postComment, likeComment, editComment, deleteComment };
