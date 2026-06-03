@@ -1,5 +1,5 @@
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 
 function Navbar() {
