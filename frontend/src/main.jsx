@@ -14,22 +14,26 @@ import Login from "./pages/Login.jsx";
 const router = createBrowserRouter([
   {
     path: "/",
-    Element: <App />,
+    element: <App />,
     children: [
       {
         index: true,
         element: <Home />,
       },
       {
-        path: "/recipes",
+        path: "recipes",
         element: <Recipes />,
       },
       {
-        path: "/recipe-details",
+        path: "recipes/:recipeId",
+        element: <Recipes />,
+      },
+      {
+        path: "recipe-details",
         element: <RecipeDetails />,
       },
       {
-        path: "/my-recipes",
+        path: "my-recipes",
         element: <MyRecipes />,
       },
       {
