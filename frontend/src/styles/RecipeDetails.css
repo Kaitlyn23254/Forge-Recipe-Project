@@ -21,6 +21,28 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
+}
+
+.recipe-details-error {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  color: #6c5f54;
+}
+
+.recipe-details-error__link {
+  color: #3a98b9;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.recipe-details-error__link:hover {
+  text-decoration: underline;
 }
 
 .recipe-details {

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { useParams, useSearchParams, Link } from "react-router";
 import IngredientsList from "../components/IngredientsList";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
@@ -14,32 +15,24 @@ import Comment from "../components/Comment";
 import ChatBox from "../components/ChatBox";
 
 const userId = "X7CtVm0P6YeWybH4ZL75";
-const recipeId = "4mHCcLEftQemlwQ2Zydn";
-const recipeType = "community";
 const username = "johnbob";
 
-const FALLBACK_RECIPE = {
-  title: "Eggs and Ham",
-  tags: "Meat, eggs, breakfast",
-  instructions: [
-    "Place a large skillet over medium heat and add the olive oil.",
-    "Saute the onion and garlic for 2 to 3 minutes until fragrant.",
-    "Add the carrots and cook for 5 minutes, stirring occasionally.",
-    "Crack in the eggs and gently stir until set to your preferred texture.",
-    "Season to taste and serve immediately while warm.",
-  ],
-  ingredients: [
-    { ingredient: "carrot", measurement: "3.4 cup" },
-    { ingredient: "onion", measurement: "1 large" },
-    { ingredient: "garlic", measurement: "2 cloves" },
-    { ingredient: "olive oil", measurement: "2 tbsp" },
-  ],
-  imageUrl: null,
-  averageRating: null,
-  ratingCount: 0,
-};
+function normalizeInstructions(instructions) {
+  if (Array.isArray(instructions)) return instructions;
+  if (typeof instructions === "string" && instructions.trim()) {
+    return instructions
+      .split(/\r?\n+/)
+      .map((step) => step.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
 
 export default function RecipeDetails() {
+  const { recipeId } = useParams();
+  const [searchParams] = useSearchParams();
+  const source = searchParams.get("source") === "official" ? "official" : "community";
+
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [commentRating, setCommentRating] = useState(null);
@@ -47,18 +40,28 @@ export default function RecipeDetails() {
   const [isSaved, setIsSaved] = useState(false);
   const [recipeLoading, setRecipeLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(true);
+  const [recipeError, setRecipeError] = useState("");
 
-  const fetchRecipe = async () => {
+  const fetchRecipe = useCallback(async () => {
+    if (!recipeId) return;
+
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/recipes/${recipeId}`,
+        { params: { source } },
       );
       setRecipe(response.data);
-      setRecipeLoading(false);
+      setRecipeError("");
     } catch (err) {
+      setRecipe(null);
+      if (err.response?.status === 404) {
+        setRecipeError("Recipe not found.");
+      } else {
+        setRecipeError("We could not load this recipe right now.");
+      }
       console.error("Error fetching recipe: ", err);
     }
-  };
+  }, [recipeId, source]);
 
   const loadRepliesForComment = async (commentId) => {
     const response = await axios.get(
@@ -69,25 +72,33 @@ export default function RecipeDetails() {
     return response.data;
   };
 
-  const fetchCommentsWithReplies = async () => {
-    const response = await axios.get(
-      `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
-      { params: { userId } },
-    );
+  const fetchCommentsWithReplies = useCallback(async () => {
+    if (!recipeId) return;
 
-    const commentsWithReplies = await Promise.all(
-      response.data.map(async (comment) => ({
-        ...comment,
-        replies: await loadRepliesForComment(comment.id),
-      })),
-    );
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
+        { params: { userId } },
+      );
 
-    setComments(commentsWithReplies);
-    setCommentsLoading(false);
-  };
+      const commentsWithReplies = await Promise.all(
+        response.data.map(async (comment) => ({
+          ...comment,
+          replies: await loadRepliesForComment(comment.id),
+        })),
+      );
+
+      setComments(commentsWithReplies);
+    } catch (err) {
+      console.error("Error fetching comments: ", err);
+      setComments([]);
+    }
+  }, [recipeId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!recipeId) return;
 
     try {
       const payload = { recipeId, userId, text: commentText };
@@ -118,13 +129,31 @@ export default function RecipeDetails() {
   };
 
   useEffect(() => {
-    fetchRecipe();
-    fetchCommentsWithReplies().catch((err) => {
-      console.error("Error fetching comments: ", err);
-    });
-  }, []);
+    if (!recipeId) {
+      setRecipeLoading(false);
+      setCommentsLoading(false);
+      setRecipeError("Recipe not found.");
+      return;
+    }
+
+    setRecipe(null);
+    setRecipeError("");
+    setRecipeLoading(true);
+    setCommentsLoading(true);
+
+    async function loadPageData() {
+      await Promise.all([
+        fetchRecipe().finally(() => setRecipeLoading(false)),
+        fetchCommentsWithReplies().finally(() => setCommentsLoading(false)),
+      ]);
+    }
+
+    loadPageData();
+  }, [recipeId, source, fetchRecipe, fetchCommentsWithReplies]);
 
   useEffect(() => {
+    if (!recipeId) return;
+
     async function fetchSavedStatus() {
       try {
         const response = await axios.get(
@@ -139,7 +168,7 @@ export default function RecipeDetails() {
     }
 
     fetchSavedStatus();
-  }, []);
+  }, [recipeId]);
 
   const handleReplySubmit = async (commentId, text) => {
     try {
@@ -256,8 +285,11 @@ export default function RecipeDetails() {
   };
 
   const handleSaveRecipe = async () => {
+    if (!recipeId) return;
+
     const previousSaved = isSaved;
     setIsSaved(!previousSaved);
+    const recipeType = recipe?.recipeType ?? source;
 
     try {
       const response = await axios.post(
@@ -272,22 +304,36 @@ export default function RecipeDetails() {
     }
   };
 
-  const recipeImageUrl = recipe?.imageUrl ?? FALLBACK_RECIPE.imageUrl;
-  const recipeTitle = recipe?.title ?? FALLBACK_RECIPE.title;
-  const recipeTags = recipe?.tags ?? FALLBACK_RECIPE.tags;
-  const recipeInstructions =
-    recipe?.instructions ?? FALLBACK_RECIPE.instructions;
-  const recipeIngredients = recipe?.ingredients ?? FALLBACK_RECIPE.ingredients;
-  const averageRating = recipe?.averageRating ?? FALLBACK_RECIPE.averageRating;
-  const ratingCount = recipe?.ratingCount ?? FALLBACK_RECIPE.ratingCount;
+  const recipeImageUrl = recipe?.imageUrl ?? null;
+  const recipeTitle = recipe?.title ?? "";
+  const recipeTags = recipe?.tags ?? "";
+  const recipeInstructions = normalizeInstructions(recipe?.instructions);
+  const recipeIngredients = recipe?.ingredients ?? [];
+  const averageRating = recipe?.averageRating ?? null;
+  const ratingCount = recipe?.ratingCount ?? 0;
+
+  const isLoading = commentsLoading || recipeLoading;
 
   return (
     <div className="recipe-details-page">
       <div className="recipe-details-page__inner">
-        {commentsLoading || recipeLoading ? (
+        {isLoading ? (
           <div className="recipe-details-loading">
             <CircularProgress />
             <p>Loading...</p>
+          </div>
+        ) : recipeError || !recipe ? (
+          <div className="recipe-details-error">
+            <Typography variant="h5" component="p">
+              {recipeError || "Recipe not found."}
+            </Typography>
+            <Typography
+              component={Link}
+              to="/recipes"
+              className="recipe-details-error__link"
+            >
+              Back to recipes
+            </Typography>
           </div>
         ) : (
           <div className="recipe-details">
