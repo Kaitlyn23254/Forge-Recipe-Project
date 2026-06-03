@@ -92,6 +92,14 @@
   color: #6c5f54;
 }
 
+.recipe-details-average-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: #6c5f54;
+}
+
 .recipe-details-save-icon {
   color: #3a98b9;
   font-size: 1.75rem !important;

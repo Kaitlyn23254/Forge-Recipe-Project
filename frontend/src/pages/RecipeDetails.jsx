@@ -3,6 +3,8 @@ import axios from "axios";
 import IngredientsList from "../components/IngredientsList";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import Rating from "@mui/material/Rating";
+import Typography from "@mui/material/Typography";
 import { timestampToString } from "../utility/timestampToString";
 
 import "../styles/RecipeDetails.css";
@@ -13,13 +15,46 @@ import ChatBox from "../components/ChatBox";
 const userId = "X7CtVm0P6YeWybH4ZL75";
 const recipeId = "4mHCcLEftQemlwQ2Zydn";
 const recipeType = "community";
-const commentRating = "3";
 const username = "johnbob";
+
+const FALLBACK_RECIPE = {
+  title: "Eggs and Ham",
+  tags: "Meat, eggs, breakfast",
+  instructions: [
+    "Place a large skillet over medium heat and add the olive oil.",
+    "Saute the onion and garlic for 2 to 3 minutes until fragrant.",
+    "Add the carrots and cook for 5 minutes, stirring occasionally.",
+    "Crack in the eggs and gently stir until set to your preferred texture.",
+    "Season to taste and serve immediately while warm.",
+  ],
+  ingredients: [
+    { ingredient: "carrot", measurement: "3.4 cup" },
+    { ingredient: "onion", measurement: "1 large" },
+    { ingredient: "garlic", measurement: "2 cloves" },
+    { ingredient: "olive oil", measurement: "2 tbsp" },
+  ],
+  imageUrl: null,
+  averageRating: null,
+  ratingCount: 0,
+};
 
 export default function RecipeDetails() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
+  const [commentRating, setCommentRating] = useState(null);
+  const [recipe, setRecipe] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+
+  const fetchRecipe = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/recipes/${recipeId}`,
+      );
+      setRecipe(response.data);
+    } catch (err) {
+      console.error("Error fetching recipe: ", err);
+    }
+  };
 
   const loadRepliesForComment = async (commentId) => {
     const response = await axios.get(
@@ -50,28 +85,35 @@ export default function RecipeDetails() {
     e.preventDefault();
 
     try {
+      const payload = { recipeId, userId, text: commentText };
+      if (commentRating != null) {
+        payload.rating = commentRating;
+      }
+
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/comments`,
-        {
-          recipeId,
-          userId,
-          text: commentText,
-          rating: commentRating,
-        },
+        payload,
       );
 
       const newComment = response.data;
+      const hadRating = commentRating != null;
       setComments((prevComments) => [
         ...prevComments,
         { ...newComment, replies: [] },
       ]);
       setCommentText("");
+      setCommentRating(null);
+
+      if (hadRating) {
+        await fetchRecipe();
+      }
     } catch (err) {
       console.log("Error posting comment: ", err);
     }
   };
 
   useEffect(() => {
+    fetchRecipe();
     fetchCommentsWithReplies().catch((err) => {
       console.error("Error fetching comments: ", err);
     });
@@ -225,22 +267,15 @@ export default function RecipeDetails() {
     }
   };
 
-  const recipeImageUrl = null;
-  const recipeTitle = "Eggs and Ham";
-  const recipeTags = "Meat, eggs, breakfast";
-  const recipeInstructions = [
-    "Place a large skillet over medium heat and add the olive oil.",
-    "Saute the onion and garlic for 2 to 3 minutes until fragrant.",
-    "Add the carrots and cook for 5 minutes, stirring occasionally.",
-    "Crack in the eggs and gently stir until set to your preferred texture.",
-    "Season to taste and serve immediately while warm.",
-  ];
-  const mockIngredients = [
-    { ingredient: "carrot", measurement: "3.4 cup" },
-    { ingredient: "onion", measurement: "1 large" },
-    { ingredient: "garlic", measurement: "2 cloves" },
-    { ingredient: "olive oil", measurement: "2 tbsp" },
-  ];
+  const recipeImageUrl = recipe?.imageUrl ?? FALLBACK_RECIPE.imageUrl;
+  const recipeTitle = recipe?.title ?? FALLBACK_RECIPE.title;
+  const recipeTags = recipe?.tags ?? FALLBACK_RECIPE.tags;
+  const recipeInstructions =
+    recipe?.instructions ?? FALLBACK_RECIPE.instructions;
+  const recipeIngredients =
+    recipe?.ingredients ?? FALLBACK_RECIPE.ingredients;
+  const averageRating = recipe?.averageRating ?? FALLBACK_RECIPE.averageRating;
+  const ratingCount = recipe?.ratingCount ?? FALLBACK_RECIPE.ratingCount;
 
   return (
     <div className="recipe-details-page">
@@ -270,6 +305,18 @@ export default function RecipeDetails() {
                 )}
               </div>
               <h4 className="recipe-details-tags">{recipeTags}</h4>
+              <div className="recipe-details-average-rating">
+                <Rating
+                  value={averageRating ?? 0}
+                  precision={0.5}
+                  readOnly
+                />
+                <Typography variant="body2" component="span">
+                  {ratingCount > 0
+                    ? `${averageRating} · ${ratingCount} rating${ratingCount === 1 ? "" : "s"}`
+                    : "No ratings yet"}
+                </Typography>
+              </div>
             </div>
           </div>
 
@@ -287,6 +334,8 @@ export default function RecipeDetails() {
                 commentText={commentText}
                 setCommentText={setCommentText}
                 handleSubmit={handleSubmit}
+                rating={commentRating}
+                setRating={setCommentRating}
               />
               <div className="recipe-details-comments">
                 {comments.map((c) => (
@@ -306,6 +355,7 @@ export default function RecipeDetails() {
                     onReplyDelete={handleReplyDelete}
                     currentUserId={userId}
                     commentUserId={c.userId}
+                    rating={c.rating}
                     onCommentEdit={async (commentId, newText) => {
                       try {
                         const resp = await axios.patch(
@@ -336,6 +386,7 @@ export default function RecipeDetails() {
                         setComments((prevComments) =>
                           prevComments.filter((c) => c.id !== commentId),
                         );
+                        await fetchRecipe();
                       } catch (err) {
                         console.log("Error deleting comment: ", err);
                       }
@@ -346,11 +397,11 @@ export default function RecipeDetails() {
             </div>
 
             <div className="recipe-details-content-right">
-              <IngredientsList ingredients={mockIngredients} />
+              <IngredientsList ingredients={recipeIngredients} />
               <ChatBox
                 recipeTitle={recipeTitle}
                 recipeInstructions={recipeInstructions}
-                recipeIngredients={mockIngredients}
+                recipeIngredients={recipeIngredients}
               />
             </div>
           </div>
