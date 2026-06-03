@@ -2,8 +2,7 @@ import express from "express";
 import {
   getCommentsByRecipeId,
   postComment,
-  addLike,
-  removeLike,
+  likeComment,
 } from "../db/comments.js";
 
 const router = express.Router();
@@ -43,21 +42,7 @@ router.post("/:commentId/like", async function (req, res) {
     return res.status(400).json({ error: "commentId and userId are required" });
 
   try {
-    const result = await addLike(commentId, userId);
-    return res.json(result);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-router.delete("/:commentId/like", async function (req, res) {
-  const { commentId } = req.params;
-  const { userId } = req.body || {};
-  if (!commentId || !userId)
-    return res.status(400).json({ error: "commentId and userId are required" });
-
-  try {
-    const result = await removeLike(commentId, userId);
+    const result = await likeComment(commentId, userId);
     return res.json(result);
   } catch (err) {
     return res.status(500).json({ error: err.message });

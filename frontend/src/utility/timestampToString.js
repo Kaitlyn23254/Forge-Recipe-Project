@@ -7,7 +7,5 @@ export function timestampToString(firebaseTimestamp) {
   const day = String(date.getDate()).padStart(2, "0");
   const year = date.getFullYear();
 
-  console.log("returning: " + `${month}/${day}/${year}`);
-
   return `${month}/${day}/${year}`;
 }

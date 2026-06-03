@@ -5,7 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  increment,
   query,
   runTransaction,
   serverTimestamp,
@@ -87,7 +86,7 @@ async function postComment({ recipeId, userId, text, rating }) {
   };
 }
 
-async function addLike(commentId, userId) {
+async function likeComment(commentId, userId) {
   if (!commentId || !userId)
     throw new Error("commentId and userId are required");
 
@@ -95,38 +94,27 @@ async function addLike(commentId, userId) {
   const metaRef = doc(db, "comments", commentId, "likes", "metadata");
 
   await runTransaction(db, async (tx) => {
+    const likeSnap = await tx.get(likeRef);
     const metaSnap = await tx.get(metaRef);
-    if (!metaSnap.exists()) {
-      tx.set(metaRef, { likes: 1, createdAt: serverTimestamp() });
+    if (likeSnap.exists()) {
+      if (metaSnap.exists()) {
+        const current = metaSnap.data().likes ?? 0;
+        const next = Math.max(0, current - 1);
+        tx.update(metaRef, { likes: next });
+      }
+      tx.delete(likeRef);
     } else {
-      tx.update(metaRef, { likes: increment(1) });
+      if (!metaSnap.exists()) {
+        tx.set(metaRef, { likes: 1, createdAt: serverTimestamp() });
+      } else {
+        tx.update(metaRef, { likes: (metaSnap.data().likes ?? 0) + 1 });
+      }
+      tx.set(likeRef, { createdAt: serverTimestamp() });
     }
-    tx.set(likeRef, { createdAt: serverTimestamp() });
   });
 
   const updated = await getDoc(metaRef);
   return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
 }
 
-async function removeLike(commentId, userId) {
-  if (!commentId || !userId)
-    throw new Error("commentId and userId are required");
-
-  const likeRef = doc(db, "comments", commentId, "likes", userId);
-  const metaRef = doc(db, "comments", commentId, "likes", "metadata");
-
-  await runTransaction(db, async (tx) => {
-    const metaSnap = await tx.get(metaRef);
-    if (metaSnap.exists()) {
-      const current = metaSnap.data().likes ?? 0;
-      const next = Math.max(0, current - 1);
-      tx.update(metaRef, { likes: next });
-    }
-    tx.delete(likeRef);
-  });
-
-  const updated = await getDoc(metaRef);
-  return { likes: updated.exists() ? (updated.data().likes ?? 0) : 0 };
-}
-
-export { getCommentsByRecipeId, postComment, addLike, removeLike };
+export { getCommentsByRecipeId, postComment, likeComment };
