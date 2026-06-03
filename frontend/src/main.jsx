@@ -49,6 +49,10 @@ const router = createBrowserRouter([
           </AdminRoute>
         ),
       },
+      {
+        path: "user-recipes/:recipeId",
+        element: <RecipeDetails />,
+      },
     ],
   },
 ]);
