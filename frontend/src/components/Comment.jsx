@@ -147,7 +147,7 @@ export default function Comment({
             <Reply
               key={reply.id}
               id={reply.id}
-              username={username}
+              username={reply.username ?? "Unknown user"}
               text={reply.text}
               createdAt={reply.createdAt}
               numLikes={reply.likeCount ?? 0}
