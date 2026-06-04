@@ -147,4 +147,4 @@ async function attachUsernames(items) {
   }));
 }
 
-export { createUser, loginUser, getUserById, attachUsernames };
+export { createUser, loginUser, getUserById, attachUsernames, getUsersCount };
