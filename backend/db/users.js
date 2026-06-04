@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   setDoc,
@@ -99,5 +100,4 @@ async function getUsersCount() {
   const snapshot = await getDocs(usersCollection);
   return snapshot.size;
 }
-
-export { createUser, loginUser, getUsersCount };
+export { createUser, loginUser, getUserById, attachUsernames };

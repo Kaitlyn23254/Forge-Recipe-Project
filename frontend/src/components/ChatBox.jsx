@@ -13,10 +13,12 @@ export default function ChatBox({
   recipeIngredients,
 }) {
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [inputText, setInputText] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     const newMessage = inputText.trim();
 
@@ -48,6 +50,8 @@ export default function ChatBox({
       setInputText("");
     } catch (err) {
       console.error("Error making request on frontend: ", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,7 +78,7 @@ export default function ChatBox({
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Ask about this recipe..."
         />
-        <button className="chat-box__send" type="submit">
+        <button className="chat-box__send" type="submit" disabled={loading}>
           Send
         </button>
       </form>

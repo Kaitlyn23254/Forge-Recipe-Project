@@ -21,6 +21,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import TuneIcon from "@mui/icons-material/Tune";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import "../styles/Recipes.css";
 
 const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
@@ -105,6 +106,7 @@ function buildMealSummary(meal) {
 }
 
 export default function Recipes() {
+  const navigate = useNavigate();
   const [recipeCollection, setRecipeCollection] = useState("official");
   const [searchText, setSearchText] = useState("");
   const [filterDialogOpen, setFilterDialogOpen] = useState(false);
@@ -339,6 +341,15 @@ export default function Recipes() {
     setSelectedRecipeError("");
   }
 
+  function viewFullRecipe() {
+    if (!selectedRecipe?.id) return;
+
+    const source =
+      recipeCollection === "community" ? "community" : "official";
+    closeRecipeDetails();
+    navigate(`/recipes/${selectedRecipe.id}?source=${source}`);
+  }
+
   return (
     <Box className="recipes-page">
       <Box className="recipes-page__inner">
@@ -511,8 +522,20 @@ export default function Recipes() {
           scroll="paper"
           className="recipes-page__recipe-dialog"
         >
-          <DialogTitle className="recipes-page__recipe-dialog-title">
-            {selectedRecipe?.title || "Recipe details"}
+          <DialogTitle className="recipes-page__recipe-dialog-title" component="div">
+            <Box className="recipes-page__recipe-dialog-header">
+              <Typography variant="h6" component="span" className="recipes-page__recipe-dialog-header-title">
+                {selectedRecipe?.title || "Recipe details"}
+              </Typography>
+              <Button
+                variant="contained"
+                className="recipes-page__view-recipe-button"
+                onClick={viewFullRecipe}
+                disabled={selectedRecipeLoading || !selectedRecipe?.id}
+              >
+                View Recipe
+              </Button>
+            </Box>
           </DialogTitle>
           <DialogContent className="recipes-page__recipe-dialog-content">
             {selectedRecipeLoading ? (

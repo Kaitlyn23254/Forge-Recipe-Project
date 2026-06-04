@@ -10,6 +10,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase.js";
+import { attachUsernames } from "./users.js";
 
 function repliesCollection(commentId) {
   return collection(db, "comments", commentId, "replies");
@@ -84,7 +85,7 @@ async function getRepliesByCommentId(commentId, userId) {
     }),
   );
 
-  return sortRepliesByLikeCount(replies);
+  return attachUsernames(sortRepliesByLikeCount(replies));
 }
 
 async function postReply({ commentId, userId, text }) {
@@ -116,12 +117,16 @@ async function postReply({ commentId, userId, text }) {
   const created = replySnap.exists() ? replySnap.data() : replyData;
   const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
 
-  return {
-    id: replyRef.id,
-    ...created,
-    likeCount,
-    likedByUser: false,
-  };
+  const [withUsername] = await attachUsernames([
+    {
+      id: replyRef.id,
+      ...created,
+      likeCount,
+      likedByUser: false,
+    },
+  ]);
+
+  return withUsername;
 }
 
 async function editReply({ commentId, replyId, userId, text }) {
@@ -156,11 +161,15 @@ async function editReply({ commentId, replyId, userId, text }) {
     ? replySnap.data()
     : (authorizedReply ?? {});
 
-  return {
-    id: replyId,
-    ...replyData,
-    ...likeState,
-  };
+  const [withUsername] = await attachUsernames([
+    {
+      id: replyId,
+      ...replyData,
+      ...likeState,
+    },
+  ]);
+
+  return withUsername;
 }
 
 async function deleteReply({ commentId, replyId, userId }) {
@@ -263,11 +272,15 @@ async function likeReply(commentId, replyId, userId) {
 
   const replyData = replySnap.exists() ? replySnap.data() : {};
 
-  return {
-    id: replyId,
-    ...replyData,
-    ...likeState,
-  };
+  const [withUsername] = await attachUsernames([
+    {
+      id: replyId,
+      ...replyData,
+      ...likeState,
+    },
+  ]);
+
+  return withUsername;
 }
 
 export { getRepliesByCommentId, postReply, editReply, deleteReply, likeReply };

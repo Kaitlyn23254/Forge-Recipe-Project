@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import Rating from "@mui/material/Rating";
 
 import "./styles/Comment.css";
 import Reply from "./Reply";
@@ -22,6 +23,7 @@ export default function Comment({
   commentUserId = null,
   onCommentEdit = async () => {},
   onCommentDelete = async () => {},
+  rating = null,
 }) {
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -53,8 +55,15 @@ export default function Comment({
   return (
     <div className="comment">
       <div className="comment-header">
-        <p className="comment-username">{username}</p>
-        <p>{createdAt}</p>
+        <div className="comment-header__meta">
+          <p className="comment-username">{username}</p>
+          <p>{createdAt}</p>
+        </div>
+        {rating != null ? (
+          <div className="comment-header__rating">
+            <Rating value={Number(rating)} precision={0.5} readOnly size="small" />
+          </div>
+        ) : null}
       </div>
       <div className="comment-body">
         {isEditing ? (
@@ -138,7 +147,7 @@ export default function Comment({
             <Reply
               key={reply.id}
               id={reply.id}
-              username={username}
+              username={reply.username ?? "Unknown user"}
               text={reply.text}
               createdAt={reply.createdAt}
               numLikes={reply.likeCount ?? 0}

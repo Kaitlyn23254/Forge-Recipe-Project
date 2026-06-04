@@ -42,6 +42,9 @@ router.post("/", async function (req, res) {
     const created = await postComment({ recipeId, userId, text, rating });
     return res.status(201).json(created);
   } catch (err) {
+    if (err.message?.includes("Invalid rating")) {
+      return res.status(400).json({ error: err.message });
+    }
     return res.status(500).json({ error: err.message });
   }
 });
