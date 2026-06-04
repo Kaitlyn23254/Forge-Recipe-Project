@@ -258,12 +258,26 @@ export default function MyRecipes() {
                   onClick={handleCardClick}
                 >
                   <CardContent className="my-recipes-page__card-content">
-                    <Box
-                      component="img"
-                      src={recipe.imageUrl || "https://placehold.co/400x275?text=No+Image"}
-                      alt={recipe.title}
-                      className="my-recipes-page__card-image"
-                    />
+                    <Box className="my-recipes-page__card-image-wrapper">
+                      <Box
+                        component="img"
+                        src={recipe.imageUrl || "https://placehold.co/400x275?text=No+Image"}
+                        alt={recipe.title}
+                        className="my-recipes-page__card-image"
+                      />
+                      <IconButton
+                        size="small"
+                        className="my-recipes-page__bookmark-btn"
+                        data-recipe-id={recipe.id}
+                        onClick={handleBookmarkClick}
+                      >
+                        {bookmarkedRecipeIds.has(recipe.id) ? (
+                          <BookmarkIcon fontSize="small" />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Box>
                     <Box className="my-recipes-page__card-body">
                       <Typography variant="h6" component="h2" className="my-recipes-page__card-title">
                         {recipe.title}
@@ -280,30 +294,16 @@ export default function MyRecipes() {
                   </CardContent>
                 </CardActionArea>
 
-                <div className="my-recipes-page__card-overlay">
+                {activeTab === "created" && (
                   <IconButton
                     size="small"
-                    className="my-recipes-page__bookmark-btn"
+                    className="my-recipes-page__menu-btn"
                     data-recipe-id={recipe.id}
-                    onClick={handleBookmarkClick}
+                    onClick={handleOpenMenu}
                   >
-                    {bookmarkedRecipeIds.has(recipe.id) ? (
-                      <BookmarkIcon fontSize="small" />
-                    ) : (
-                      <BookmarkBorderIcon fontSize="small" />
-                    )}
+                    <MoreVertIcon fontSize="small" />
                   </IconButton>
-                  {activeTab === "created" && (
-                    <IconButton
-                      size="small"
-                      className="my-recipes-page__menu-btn"
-                      data-recipe-id={recipe.id}
-                      onClick={handleOpenMenu}
-                    >
-                      <MoreVertIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </div>
+                )}
               </Card>
             ))}
           </div>

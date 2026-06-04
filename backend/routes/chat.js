@@ -4,6 +4,10 @@ import { client } from "../openai.js";
 const router = express.Router();
 
 router.post("/", async (req, res) => {
+  if (!client) {
+    return res.status(503).json({ error: "Chatbot unavailable: OPENAI_API_KEY not configured." });
+  }
+
   try {
     const { messages, recipeTitle, recipeInstructions, recipeIngredients } =
       req.body;
