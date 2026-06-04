@@ -35,16 +35,15 @@ function parseInstructionsText(instructions) {
 }
 
 function buildTagsString(meal) {
-  const parts = [
-    meal.strCategory,
-    meal.strArea,
-    ...parseMealTags(meal),
-  ].filter(Boolean);
+  const parts = [meal.strCategory, meal.strArea, ...parseMealTags(meal)].filter(
+    Boolean,
+  );
 
   return parts.length > 0 ? parts.join(", ") : "";
 }
 
 async function fetchMealById(recipeId) {
+  console.log("in fetchMealById");
   const response = await fetch(
     `${MEALDB_BASE_URL}/lookup.php?i=${encodeURIComponent(recipeId)}`,
   );
@@ -54,6 +53,8 @@ async function fetchMealById(recipeId) {
   }
 
   const data = await response.json();
+
+  console.log("data is: ", data);
   return data.meals?.[0] ?? null;
 }
 
@@ -71,8 +72,4 @@ function normalizeMealToRecipe(meal) {
   };
 }
 
-export {
-  fetchMealById,
-  normalizeMealToRecipe,
-  parseInstructionsText,
-};
+export { fetchMealById, normalizeMealToRecipe, parseInstructionsText };
