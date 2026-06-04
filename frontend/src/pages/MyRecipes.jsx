@@ -2,8 +2,18 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import {
+  Box,
+  Card,
+  CardActionArea,
+  CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
   IconButton,
   InputAdornment,
   Menu,
@@ -33,6 +43,8 @@ export default function MyRecipes() {
   const [isLoading, setIsLoading] = useState(false);
   const [menuAnchorElement, setMenuAnchorElement] = useState(null);
   const [menuTargetRecipeId, setMenuTargetRecipeId] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [recipeToDeleteId, setRecipeToDeleteId] = useState(null);
 
   async function fetchCreatedRecipes() {
     setIsLoading(true);
@@ -91,7 +103,7 @@ export default function MyRecipes() {
 
   function handleCardClick(event) {
     const recipeId = event.currentTarget.dataset.recipeId;
-    navigate(`/user-recipes/${recipeId}`);
+    navigate(`/recipes/${recipeId}`);
   }
 
   async function handleBookmarkClick(event) {
@@ -129,15 +141,26 @@ export default function MyRecipes() {
     setMenuTargetRecipeId(null);
   }
 
-  async function handleDeleteRecipe() {
-    const recipeId = menuTargetRecipeId;
+  function handleDeleteClick() {
+    setRecipeToDeleteId(menuTargetRecipeId);
     handleCloseMenu();
-    await axios.delete(`${BASE_URL}/recipes/${recipeId}`, {
+    setDeleteConfirmOpen(true);
+  }
+
+  function handleDeleteCancel() {
+    setDeleteConfirmOpen(false);
+    setRecipeToDeleteId(null);
+  }
+
+  async function handleDeleteConfirm() {
+    setDeleteConfirmOpen(false);
+    await axios.delete(`${BASE_URL}/recipes/${recipeToDeleteId}`, {
       data: { userId: HARDCODED_USER_ID },
     });
     setCreatedRecipes((previousRecipes) =>
-      previousRecipes.filter((createdRecipe) => createdRecipe.id !== recipeId),
+      previousRecipes.filter((createdRecipe) => createdRecipe.id !== recipeToDeleteId),
     );
+    setRecipeToDeleteId(null);
   }
 
   function handleEditRecipe() {
@@ -228,53 +251,60 @@ export default function MyRecipes() {
         {!isLoading && displayedRecipes.length > 0 && (
           <div className="my-recipes-page__grid">
             {displayedRecipes.map((recipe) => (
-              <div
-                key={recipe.id}
-                className="my-recipes-page__card"
-                data-recipe-id={recipe.id}
-                onClick={handleCardClick}
-              >
-                <img
-                  src={recipe.imageUrl || "https://via.placeholder.com/160x160?text=No+Image"}
-                  alt={recipe.title}
-                  className="my-recipes-page__card-image"
-                />
-                <div className="my-recipes-page__card-body">
-                  <Typography className="my-recipes-page__card-title">
-                    {recipe.title}
-                  </Typography>
-                  <div className="my-recipes-page__card-footer">
-                    <Typography className="my-recipes-page__card-time">
-                      <AccessTimeIcon style={{ fontSize: "0.9rem" }} />
-                      {recipe.cookingTime || "—"}
-                    </Typography>
-                    <div className="my-recipes-page__card-actions">
-                      {activeTab === "created" && (
-                        <IconButton
-                          size="small"
-                          className="my-recipes-page__menu-btn"
-                          data-recipe-id={recipe.id}
-                          onClick={handleOpenMenu}
-                        >
-                          <MoreVertIcon fontSize="small" />
-                        </IconButton>
+              <Card key={recipe.id} elevation={0} className="my-recipes-page__card">
+                <CardActionArea
+                  className="my-recipes-page__card-action"
+                  data-recipe-id={recipe.id}
+                  onClick={handleCardClick}
+                >
+                  <CardContent className="my-recipes-page__card-content">
+                    <Box
+                      component="img"
+                      src={recipe.imageUrl || "https://placehold.co/400x275?text=No+Image"}
+                      alt={recipe.title}
+                      className="my-recipes-page__card-image"
+                    />
+                    <Box className="my-recipes-page__card-body">
+                      <Typography variant="h6" component="h2" className="my-recipes-page__card-title">
+                        {recipe.title}
+                      </Typography>
+                      {recipe.cookingTime && (
+                        <Box className="my-recipes-page__card-time">
+                          <AccessTimeIcon className="my-recipes-page__card-time-icon" />
+                          <Typography variant="body2" className="my-recipes-page__card-time-text">
+                            {recipe.cookingTime}
+                          </Typography>
+                        </Box>
                       )}
-                      <IconButton
-                        size="small"
-                        className="my-recipes-page__bookmark-btn"
-                        data-recipe-id={recipe.id}
-                        onClick={handleBookmarkClick}
-                      >
-                        {bookmarkedRecipeIds.has(recipe.id) ? (
-                          <BookmarkIcon fontSize="small" />
-                        ) : (
-                          <BookmarkBorderIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </div>
-                  </div>
+                    </Box>
+                  </CardContent>
+                </CardActionArea>
+
+                <div className="my-recipes-page__card-overlay">
+                  <IconButton
+                    size="small"
+                    className="my-recipes-page__bookmark-btn"
+                    data-recipe-id={recipe.id}
+                    onClick={handleBookmarkClick}
+                  >
+                    {bookmarkedRecipeIds.has(recipe.id) ? (
+                      <BookmarkIcon fontSize="small" />
+                    ) : (
+                      <BookmarkBorderIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                  {activeTab === "created" && (
+                    <IconButton
+                      size="small"
+                      className="my-recipes-page__menu-btn"
+                      data-recipe-id={recipe.id}
+                      onClick={handleOpenMenu}
+                    >
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -285,8 +315,23 @@ export default function MyRecipes() {
           onClose={handleCloseMenu}
         >
           <MenuItem onClick={handleEditRecipe}>Edit</MenuItem>
-          <MenuItem onClick={handleDeleteRecipe}>Delete</MenuItem>
+          <MenuItem onClick={handleDeleteClick}>Delete</MenuItem>
         </Menu>
+
+        <Dialog open={deleteConfirmOpen} onClose={handleDeleteCancel}>
+          <DialogTitle>Delete Recipe</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to delete this recipe? This cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDeleteCancel}>Cancel</Button>
+            <Button onClick={handleDeleteConfirm} className="my-recipes-page__delete-confirm-btn">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     </div>
   );
