@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
-import { useParams, useSearchParams, Link } from "react-router";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 import IngredientsList from "../components/IngredientsList";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import IconButton from "@mui/material/IconButton";
 import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -29,6 +31,7 @@ function normalizeInstructions(instructions) {
 }
 
 export default function RecipeDetails() {
+  const navigate = useNavigate();
   const { recipeId } = useParams();
   const [searchParams] = useSearchParams();
   const source =
@@ -160,11 +163,10 @@ export default function RecipeDetails() {
     async function fetchSavedStatus() {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/saved-recipes/${recipeId}`,
-          { params: { userId } },
+          `${import.meta.env.VITE_BASE_URL}/users/${userId}/bookmarks/ids`,
         );
-
-        setIsSaved(Boolean(response.data?.recipeId));
+        const bookmarkedIds = Array.isArray(response.data) ? response.data : [];
+        setIsSaved(bookmarkedIds.includes(recipeId));
       } catch (err) {
         console.error("Error fetching saved recipe status: ", err);
       }
@@ -295,12 +297,18 @@ export default function RecipeDetails() {
     const recipeType = recipe?.recipeType ?? source;
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/saved-recipes/save/${recipeId}`,
-        { userId, recipeType },
-      );
-
-      setIsSaved(response.data.saved);
+      if (previousSaved) {
+        await axios.delete(
+          `${import.meta.env.VITE_BASE_URL}/users/${userId}/bookmarks/${recipeId}`,
+        );
+        setIsSaved(false);
+      } else {
+        await axios.post(
+          `${import.meta.env.VITE_BASE_URL}/users/${userId}/bookmarks/${recipeId}`,
+          { recipeType },
+        );
+        setIsSaved(true);
+      }
     } catch (err) {
       setIsSaved(previousSaved);
       console.log("Error saving recipe: ", err);
@@ -310,16 +318,29 @@ export default function RecipeDetails() {
   const recipeImageUrl = recipe?.imageUrl ?? null;
   const recipeTitle = recipe?.title ?? "";
   const recipeTags = recipe?.tags ?? "";
-  const recipeInstructions = normalizeInstructions(recipe?.instructions);
-  const recipeIngredients = recipe?.ingredients ?? [];
+  const rawInstructions = recipe?.instructions?.length
+    ? recipe.instructions
+    : (recipe?.steps ?? []);
+  const recipeInstructions = normalizeInstructions(rawInstructions);
+  const recipeIngredients = (recipe?.ingredients ?? []).map((ing) => ({
+    ingredient: ing.ingredient || ing.name || "",
+    measurement: ing.measurement || "",
+  }));
   const averageRating = recipe?.averageRating ?? null;
   const ratingCount = recipe?.ratingCount ?? 0;
 
   const isLoading = commentsLoading || recipeLoading;
 
+  function handleBack() {
+    navigate(-1);
+  }
+
   return (
     <div className="recipe-details-page">
       <div className="recipe-details-page__inner">
+        <IconButton className="recipe-details-back-btn" onClick={handleBack}>
+          <ArrowBackIcon />
+        </IconButton>
         {isLoading ? (
           <div className="recipe-details-loading">
             <CircularProgress />

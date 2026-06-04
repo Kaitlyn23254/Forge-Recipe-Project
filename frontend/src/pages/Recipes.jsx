@@ -20,9 +20,16 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import TuneIcon from "@mui/icons-material/Tune";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import IconButton from "@mui/material/IconButton";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import "../styles/Recipes.css";
+import { getStoredUser } from "../utility/auth";
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
 
@@ -122,7 +129,56 @@ export default function Recipes() {
   const [selectedRecipeOpen, setSelectedRecipeOpen] = useState(false);
   const [selectedRecipeLoading, setSelectedRecipeLoading] = useState(false);
   const [selectedRecipeError, setSelectedRecipeError] = useState("");
+  const [bookmarkedRecipeIds, setBookmarkedRecipeIds] = useState(new Set());
   const selectedRecipeAbortRef = useRef(null);
+
+  const { uid: userId } = getStoredUser() ?? {};
+
+  useEffect(() => {
+    async function fetchBookmarkedIds() {
+      try {
+        const response = await axios.get(
+          `${BASE_URL}/users/${userId}/bookmarks/ids`,
+        );
+        setBookmarkedRecipeIds(
+          new Set(Array.isArray(response.data) ? response.data : []),
+        );
+      } catch (err) {
+        console.error("Error fetching bookmarked ids:", err);
+      }
+    }
+    fetchBookmarkedIds();
+  }, []);
+
+  function handleCardClick(event) {
+    const recipeId = event.currentTarget.dataset.recipeId;
+    const clickedRecipe = recipes.find((recipe) => recipe.id === recipeId);
+    if (clickedRecipe) {
+      openRecipeDetails(clickedRecipe);
+    }
+  }
+
+  async function handleBookmarkToggle(event) {
+    event.stopPropagation();
+    const recipeId = event.currentTarget.dataset.recipeId;
+    const isCurrentlyBookmarked = bookmarkedRecipeIds.has(recipeId);
+
+    if (isCurrentlyBookmarked) {
+      await axios.delete(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
+      setBookmarkedRecipeIds((previousIds) => {
+        const updatedIds = new Set(previousIds);
+        updatedIds.delete(recipeId);
+        return updatedIds;
+      });
+    } else {
+      await axios.post(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`, {
+        recipeType: "official",
+      });
+      setBookmarkedRecipeIds(
+        (previousIds) => new Set([...previousIds, recipeId]),
+      );
+    }
+  }
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -140,8 +196,15 @@ export default function Recipes() {
       setLoading(true);
       setError("");
 
-      const hasActiveFilter = Boolean(activeFilter?.type && activeFilter?.value);
-      const filterParam = activeFilter?.type === "ingredient" ? "i" : activeFilter?.type === "category" ? "c" : "a";
+      const hasActiveFilter = Boolean(
+        activeFilter?.type && activeFilter?.value,
+      );
+      const filterParam =
+        activeFilter?.type === "ingredient"
+          ? "i"
+          : activeFilter?.type === "category"
+            ? "c"
+            : "a";
       const endpoint = hasActiveFilter
         ? `${API_BASE_URL}/filter.php?${filterParam}=${encodeURIComponent(activeFilter.value)}`
         : searchTerm
@@ -149,7 +212,9 @@ export default function Recipes() {
           : `${API_BASE_URL}/search.php?f=a`;
 
       try {
-        const response = await fetch(endpoint, { signal: abortController.signal });
+        const response = await fetch(endpoint, {
+          signal: abortController.signal,
+        });
 
         if (!response.ok) {
           throw new Error("MealDB request failed.");
@@ -180,26 +245,24 @@ export default function Recipes() {
           nextRecipes = detailedMeals;
         }
 
-        nextRecipes = nextRecipes
-          .map(buildMealSummary)
-          .filter((card) => {
-            if (searchTerm.length === 0) {
-              return true;
-            }
+        nextRecipes = nextRecipes.map(buildMealSummary).filter((card) => {
+          if (searchTerm.length === 0) {
+            return true;
+          }
 
-            const normalizedSearch = searchTerm.toLowerCase();
-            return (
-              card.title.toLowerCase().includes(normalizedSearch) ||
-              card.description.toLowerCase().includes(normalizedSearch) ||
-              card.ingredients.some((ingredient) =>
-                [ingredient.measurement, ingredient.ingredient]
-                  .filter(Boolean)
-                  .join(" ")
-                  .toLowerCase()
-                  .includes(normalizedSearch),
-              )
-            );
-          });
+          const normalizedSearch = searchTerm.toLowerCase();
+          return (
+            card.title.toLowerCase().includes(normalizedSearch) ||
+            card.description.toLowerCase().includes(normalizedSearch) ||
+            card.ingredients.some((ingredient) =>
+              [ingredient.measurement, ingredient.ingredient]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase()
+                .includes(normalizedSearch),
+            )
+          );
+        });
 
         setRecipes(nextRecipes);
       } catch (fetchError) {
@@ -236,7 +299,9 @@ export default function Recipes() {
         if (ingsRes.ok) {
           const data = await ingsRes.json();
           if (Array.isArray(data.meals)) {
-            const names = data.meals.map((m) => m.strIngredient).filter(Boolean);
+            const names = data.meals
+              .map((m) => m.strIngredient)
+              .filter(Boolean);
             setIngredientOptions(names);
           }
         }
@@ -321,7 +386,9 @@ export default function Recipes() {
       }
     } catch (fetchError) {
       if (fetchError.name !== "AbortError") {
-        setSelectedRecipeError("We could not load the full recipe details right now.");
+        setSelectedRecipeError(
+          "We could not load the full recipe details right now.",
+        );
       }
     } finally {
       if (!abortController.signal.aborted) {
@@ -344,8 +411,7 @@ export default function Recipes() {
   function viewFullRecipe() {
     if (!selectedRecipe?.id) return;
 
-    const source =
-      recipeCollection === "community" ? "community" : "official";
+    const source = recipeCollection === "community" ? "community" : "official";
     closeRecipeDetails();
     navigate(`/recipes/${selectedRecipe.id}?source=${source}`);
   }
@@ -354,7 +420,11 @@ export default function Recipes() {
     <Box className="recipes-page">
       <Box className="recipes-page__inner">
         <Box className="recipes-page__header">
-          <Typography variant="h3" component="h1" className="recipes-page__title">
+          <Typography
+            variant="h3"
+            component="h1"
+            className="recipes-page__title"
+          >
             Recipes
           </Typography>
           <Typography variant="subtitle1" className="recipes-page__subtitle">
@@ -388,10 +458,16 @@ export default function Recipes() {
             }}
             className="recipes-page__toggle-group"
           >
-            <ToggleButton value="official" className="recipes-page__toggle-button">
+            <ToggleButton
+              value="official"
+              className="recipes-page__toggle-button"
+            >
               Official
             </ToggleButton>
-            <ToggleButton value="community" className="recipes-page__toggle-button">
+            <ToggleButton
+              value="community"
+              className="recipes-page__toggle-button"
+            >
               Community
             </ToggleButton>
           </ToggleButtonGroup>
@@ -409,8 +485,15 @@ export default function Recipes() {
 
         {activeFilter ? (
           <Box className="recipes-page__filter-summary">
-            <Chip label={filterSummary} className="recipes-page__active-filter-chip" />
-            <Button variant="text" className="recipes-page__clear-filter-button" onClick={clearFilter}>
+            <Chip
+              label={filterSummary}
+              className="recipes-page__active-filter-chip"
+            />
+            <Button
+              variant="text"
+              className="recipes-page__clear-filter-button"
+              onClick={clearFilter}
+            >
               Clear filter
             </Button>
           </Box>
@@ -424,7 +507,10 @@ export default function Recipes() {
         >
           <DialogTitle>Filter recipes</DialogTitle>
           <DialogContent className="recipes-page__filter-dialog-content">
-            <Typography variant="body2" className="recipes-page__filter-dialog-copy">
+            <Typography
+              variant="body2"
+              className="recipes-page__filter-dialog-copy"
+            >
               Filter by category, main ingredient, or location.
             </Typography>
             <Select
@@ -505,7 +591,10 @@ export default function Recipes() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setFilterDialogOpen(false)}>Cancel</Button>
-            <Button onClick={clearFilter} disabled={!activeFilter && !filterValue && !filterDialogOpen}>
+            <Button
+              onClick={clearFilter}
+              disabled={!activeFilter && !filterValue && !filterDialogOpen}
+            >
               Reset
             </Button>
             <Button variant="contained" onClick={applyFilter}>
@@ -522,9 +611,16 @@ export default function Recipes() {
           scroll="paper"
           className="recipes-page__recipe-dialog"
         >
-          <DialogTitle className="recipes-page__recipe-dialog-title" component="div">
+          <DialogTitle
+            className="recipes-page__recipe-dialog-title"
+            component="div"
+          >
             <Box className="recipes-page__recipe-dialog-header">
-              <Typography variant="h6" component="span" className="recipes-page__recipe-dialog-header-title">
+              <Typography
+                variant="h6"
+                component="span"
+                className="recipes-page__recipe-dialog-header-title"
+              >
                 {selectedRecipe?.title || "Recipe details"}
               </Typography>
               <Button
@@ -541,7 +637,10 @@ export default function Recipes() {
             {selectedRecipeLoading ? (
               <Box className="recipes-page__recipe-dialog-state">
                 <CircularProgress size={34} />
-                <Typography variant="body2" className="recipes-page__recipe-dialog-state-text">
+                <Typography
+                  variant="body2"
+                  className="recipes-page__recipe-dialog-state-text"
+                >
                   Loading recipe details...
                 </Typography>
               </Box>
@@ -558,20 +657,34 @@ export default function Recipes() {
                   <Box className="recipes-page__recipe-dialog-meta">
                     <Box className="recipes-page__recipe-dialog-chip-row">
                       {selectedRecipe.source ? (
-                        <Chip label={selectedRecipe.source} className="recipes-page__recipe-dialog-chip" />
+                        <Chip
+                          label={selectedRecipe.source}
+                          className="recipes-page__recipe-dialog-chip"
+                        />
                       ) : null}
                       {selectedRecipe.area ? (
-                        <Chip label={selectedRecipe.area} className="recipes-page__recipe-dialog-chip" />
+                        <Chip
+                          label={selectedRecipe.area}
+                          className="recipes-page__recipe-dialog-chip"
+                        />
                       ) : null}
                       {selectedRecipe.category ? (
-                        <Chip label={selectedRecipe.category} className="recipes-page__recipe-dialog-chip" />
+                        <Chip
+                          label={selectedRecipe.category}
+                          className="recipes-page__recipe-dialog-chip"
+                        />
                       ) : null}
                     </Box>
 
                     {selectedRecipe.tags.length > 0 ? (
                       <Box className="recipes-page__recipe-dialog-chip-row">
                         {selectedRecipe.tags.map((tag) => (
-                          <Chip key={tag} label={tag} variant="outlined" className="recipes-page__recipe-dialog-tag" />
+                          <Chip
+                            key={tag}
+                            label={tag}
+                            variant="outlined"
+                            className="recipes-page__recipe-dialog-tag"
+                          />
                         ))}
                       </Box>
                     ) : null}
@@ -580,16 +693,29 @@ export default function Recipes() {
 
                 <Box className="recipes-page__recipe-dialog-grid">
                   <Box className="recipes-page__recipe-dialog-panel">
-                    <Typography variant="h5" component="h3" className="recipes-page__recipe-dialog-panel-title">
+                    <Typography
+                      variant="h5"
+                      component="h3"
+                      className="recipes-page__recipe-dialog-panel-title"
+                    >
                       Ingredients
                     </Typography>
                     <Box className="recipes-page__recipe-dialog-ingredients">
                       {selectedRecipe.ingredients.map((ingredient) => (
-                        <Box key={`${ingredient.ingredient}-${ingredient.measurement}`} className="recipes-page__recipe-dialog-ingredient-row">
-                          <Typography variant="body2" className="recipes-page__recipe-dialog-measurement">
+                        <Box
+                          key={`${ingredient.ingredient}-${ingredient.measurement}`}
+                          className="recipes-page__recipe-dialog-ingredient-row"
+                        >
+                          <Typography
+                            variant="body2"
+                            className="recipes-page__recipe-dialog-measurement"
+                          >
                             {ingredient.measurement || "-"}
                           </Typography>
-                          <Typography variant="body2" className="recipes-page__recipe-dialog-ingredient">
+                          <Typography
+                            variant="body2"
+                            className="recipes-page__recipe-dialog-ingredient"
+                          >
                             {ingredient.ingredient}
                           </Typography>
                         </Box>
@@ -598,10 +724,17 @@ export default function Recipes() {
                   </Box>
 
                   <Box className="recipes-page__recipe-dialog-panel recipes-page__recipe-dialog-panel--wide">
-                    <Typography variant="h5" component="h3" className="recipes-page__recipe-dialog-panel-title">
+                    <Typography
+                      variant="h5"
+                      component="h3"
+                      className="recipes-page__recipe-dialog-panel-title"
+                    >
                       Instructions
                     </Typography>
-                    <Typography variant="body1" className="recipes-page__recipe-dialog-instructions">
+                    <Typography
+                      variant="body1"
+                      className="recipes-page__recipe-dialog-instructions"
+                    >
                       {selectedRecipe.instructions}
                     </Typography>
 
@@ -635,7 +768,10 @@ export default function Recipes() {
                 </Box>
 
                 {selectedRecipeError ? (
-                  <Typography variant="body2" className="recipes-page__recipe-dialog-error">
+                  <Typography
+                    variant="body2"
+                    className="recipes-page__recipe-dialog-error"
+                  >
                     {selectedRecipeError}
                   </Typography>
                 ) : null}
@@ -650,7 +786,8 @@ export default function Recipes() {
         {recipeCollection === "community" ? (
           <Box className="recipes-page__state">
             <Typography variant="body1" className="recipes-page__state-text">
-              Community recipes will appear here once users upload their own recipes.
+              Community recipes will appear here once users upload their own
+              recipes.
             </Typography>
           </Box>
         ) : loading ? (
@@ -676,27 +813,59 @@ export default function Recipes() {
           <Box className="recipes-page__grid">
             {recipes.map((card) => (
               <Card key={card.id} elevation={0} className="recipes-page__card">
-                <CardActionArea className="recipes-page__card-action" onClick={() => openRecipeDetails(card)}>
+                <CardActionArea
+                  className="recipes-page__card-action"
+                  data-recipe-id={card.id}
+                  onClick={handleCardClick}
+                >
                   <CardContent className="recipes-page__card-content">
-                    <Box
-                      component="img"
-                      src={card.image}
-                      alt={card.title}
-                      className="recipes-page__card-image"
-                    />
+                    <Box className="recipes-page__card-image-wrapper">
+                      <Box
+                        component="img"
+                        src={card.image}
+                        alt={card.title}
+                        className="recipes-page__card-image"
+                      />
+                      <IconButton
+                        className="recipes-page__card-bookmark-btn"
+                        data-recipe-id={card.id}
+                        onClick={handleBookmarkToggle}
+                      >
+                        {bookmarkedRecipeIds.has(card.id) ? (
+                          <BookmarkIcon fontSize="small" />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Box>
 
                     <Box className="recipes-page__card-meta">
-                      <Chip label={card.source} size="small" className="recipes-page__card-chip" />
+                      <Chip
+                        label={card.source}
+                        size="small"
+                        className="recipes-page__card-chip"
+                      />
                       {card.area ? (
-                        <Chip label={card.area} size="small" className="recipes-page__card-chip" />
+                        <Chip
+                          label={card.area}
+                          size="small"
+                          className="recipes-page__card-chip"
+                        />
                       ) : null}
                     </Box>
 
                     <Box className="recipes-page__card-body">
-                      <Typography variant="h6" component="h2" className="recipes-page__card-title">
+                      <Typography
+                        variant="h6"
+                        component="h2"
+                        className="recipes-page__card-title"
+                      >
                         {card.title}
                       </Typography>
-                      <Typography variant="body2" className="recipes-page__card-description">
+                      <Typography
+                        variant="body2"
+                        className="recipes-page__card-description"
+                      >
                         {card.description}
                       </Typography>
                     </Box>

@@ -88,6 +88,8 @@ async function loginUser({ email, password }) {
     throw new Error("email and password are required");
   }
 
+  console.log("email is: ", cleanEmail, "Password is: ", cleanPassword);
+
   const user = await getUserByEmail(cleanEmail);
   if (!user || user.password !== cleanPassword) {
     throw new Error("Invalid email or password");
