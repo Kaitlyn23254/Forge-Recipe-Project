@@ -36,7 +36,8 @@ export default function RecipeDetails() {
   const navigate = useNavigate();
   const { recipeId } = useParams();
   const [searchParams] = useSearchParams();
-  const source = searchParams.get("source") === "official" ? "official" : "community";
+  const source =
+    searchParams.get("source") === "official" ? "official" : "community";
 
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
@@ -319,7 +320,7 @@ export default function RecipeDetails() {
   const recipeTags = recipe?.tags ?? "";
   const rawInstructions = recipe?.instructions?.length
     ? recipe.instructions
-    : recipe?.steps ?? [];
+    : (recipe?.steps ?? []);
   const recipeInstructions = normalizeInstructions(rawInstructions);
   const recipeIngredients = (recipe?.ingredients ?? []).map((ing) => ({
     ingredient: ing.ingredient || ing.name || "",

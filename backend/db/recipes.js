@@ -12,7 +12,11 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase.js";
-import { fetchMealById, normalizeMealToRecipe, parseInstructionsText } from "../mealdb.js";
+import {
+  fetchMealById,
+  normalizeMealToRecipe,
+  parseInstructionsText,
+} from "../mealdb.js";
 
 const recipesCollection = collection(db, "recipes");
 const commentsCollection = collection(db, "comments");
@@ -24,12 +28,20 @@ function isValidRatingValue(rating) {
 }
 
 async function getRatingSummaryForRecipe(recipeId) {
-  const commentsQuery = query(commentsCollection, where("recipeId", "==", recipeId));
+  const commentsQuery = query(
+    commentsCollection,
+    where("recipeId", "==", recipeId),
+  );
   const snapshot = await getDocs(commentsQuery);
-  const rated = snapshot.docs.map((d) => d.data().rating).filter((r) => isValidRatingValue(r));
+  const rated = snapshot.docs
+    .map((d) => d.data().rating)
+    .filter((r) => isValidRatingValue(r));
   if (rated.length === 0) return { averageRating: null, ratingCount: 0 };
   const sum = rated.reduce((acc, r) => acc + Number(r), 0);
-  return { averageRating: Math.round((sum / rated.length) * 10) / 10, ratingCount: rated.length };
+  return {
+    averageRating: Math.round((sum / rated.length) * 10) / 10,
+    ratingCount: rated.length,
+  };
 }
 
 function normalizeFirestoreRecipe(recipeId, data) {
@@ -54,26 +66,41 @@ function normalizeFirestoreRecipe(recipeId, data) {
   };
 }
 
-async function getRecipeById(recipeId, { source = "community" } = {}) {
+async function getRecipeById(recipeId, source = "official") {
   if (!recipeId) throw new Error("recipeId is required");
   if (source !== "official") {
     const recipeRef = doc(db, "recipes", recipeId);
     const recipeSnap = await getDoc(recipeRef);
-    if (recipeSnap.exists()) return normalizeFirestoreRecipe(recipeId, recipeSnap.data());
+    if (recipeSnap.exists())
+      return normalizeFirestoreRecipe(recipeId, recipeSnap.data());
   }
   if (source === "official") {
     const meal = await fetchMealById(recipeId);
-    if (!meal) { const err = new Error("Recipe not found"); err.statusCode = 404; throw err; }
-    return { ...normalizeMealToRecipe(meal), ...await getRatingSummaryForRecipe(recipeId) };
+    if (!meal) {
+      const err = new Error("Recipe not found");
+      err.statusCode = 404;
+      throw err;
+    }
+    return {
+      ...normalizeMealToRecipe(meal),
+      ...(await getRatingSummaryForRecipe(recipeId)),
+    };
   }
-  const err = new Error("Recipe not found"); err.statusCode = 404; throw err;
+  const err = new Error("Recipe not found");
+  err.statusCode = 404;
+  throw err;
 }
 
 async function recomputeRecipeAverageRating(recipeId) {
   if (!recipeId) throw new Error("recipeId is required");
-  const commentsQuery = query(commentsCollection, where("recipeId", "==", recipeId));
+  const commentsQuery = query(
+    commentsCollection,
+    where("recipeId", "==", recipeId),
+  );
   const snapshot = await getDocs(commentsQuery);
-  const rated = snapshot.docs.map((d) => d.data().rating).filter((r) => isValidRatingValue(r));
+  const rated = snapshot.docs
+    .map((d) => d.data().rating)
+    .filter((r) => isValidRatingValue(r));
   const recipeRef = doc(db, "recipes", recipeId);
   const recipeSnap = await getDoc(recipeRef);
   if (!recipeSnap.exists()) return null;
@@ -88,25 +115,62 @@ async function recomputeRecipeAverageRating(recipeId) {
   return { averageRating, ratingCount };
 }
 
-async function createRecipe({ userId, title, description, steps, cookingTime, ingredients, imageUrl }) {
+async function createRecipe({
+  userId,
+  title,
+  description,
+  steps,
+  cookingTime,
+  ingredients,
+  imageUrl,
+}) {
   const newRecipeDoc = await addDoc(recipesCollection, {
-    title: title || "", description: description || "", steps: steps || [],
-    cookingTime: cookingTime || "", ingredients: ingredients || [],
-    imageUrl: imageUrl || "", createdBy: userId, createdAt: serverTimestamp(),
+    title: title || "",
+    description: description || "",
+    steps: steps || [],
+    cookingTime: cookingTime || "",
+    ingredients: ingredients || [],
+    imageUrl: imageUrl || "",
+    createdBy: userId,
+    createdAt: serverTimestamp(),
   });
-  return { id: newRecipeDoc.id, title, description, steps, cookingTime, ingredients, imageUrl, createdBy: userId };
+  return {
+    id: newRecipeDoc.id,
+    title,
+    description,
+    steps,
+    cookingTime,
+    ingredients,
+    imageUrl,
+    createdBy: userId,
+  };
 }
 
 async function getRecipesByUser(userId) {
-  const snapshot = await getDocs(query(recipesCollection, where("createdBy", "==", userId)));
-  return snapshot.docs.map((recipeDoc) => ({ id: recipeDoc.id, ...recipeDoc.data() }));
+  const snapshot = await getDocs(
+    query(recipesCollection, where("createdBy", "==", userId)),
+  );
+  return snapshot.docs.map((recipeDoc) => ({
+    id: recipeDoc.id,
+    ...recipeDoc.data(),
+  }));
 }
 
-async function updateRecipe({ recipeId, userId, title, description, steps, cookingTime, ingredients, imageUrl }) {
+async function updateRecipe({
+  recipeId,
+  userId,
+  title,
+  description,
+  steps,
+  cookingTime,
+  ingredients,
+  imageUrl,
+}) {
   const recipeRef = doc(db, "recipes", recipeId);
   const recipeSnapshot = await getDoc(recipeRef);
   if (!recipeSnapshot.exists()) throw new Error("Recipe not found");
-  if (recipeSnapshot.data().createdBy !== userId) throw new Error("Unauthorized: you did not create this recipe");
+  if (recipeSnapshot.data().createdBy !== userId)
+    throw new Error("Unauthorized: you did not create this recipe");
   const updatedFields = { updatedAt: serverTimestamp() };
   if (title !== undefined) updatedFields.title = title;
   if (description !== undefined) updatedFields.description = description;
@@ -122,7 +186,8 @@ async function deleteRecipe({ recipeId, userId }) {
   const recipeRef = doc(db, "recipes", recipeId);
   const recipeSnapshot = await getDoc(recipeRef);
   if (!recipeSnapshot.exists()) throw new Error("Recipe not found");
-  if (recipeSnapshot.data().createdBy !== userId) throw new Error("Unauthorized: you did not create this recipe");
+  if (recipeSnapshot.data().createdBy !== userId)
+    throw new Error("Unauthorized: you did not create this recipe");
   await deleteDoc(recipeRef);
 }
 
@@ -132,9 +197,13 @@ async function getBookmarks(userId) {
   const bookmarkDocs = bookmarksSnapshot.docs.map((d) => d.data());
   const savedRecipes = await Promise.all(
     bookmarkDocs.map(async (bookmark) => {
-      const bookmarkSource = bookmark.recipeType === "official" ? "official" : "community";
-      try { return await getRecipeById(bookmark.recipeId, { source: bookmarkSource }); }
-      catch { return null; }
+      const bookmarkSource =
+        bookmark.recipeType === "official" ? "official" : "community";
+      try {
+        return await getRecipeById(bookmark.recipeId, bookmarkSource);
+      } catch {
+        return null;
+      }
     }),
   );
   return savedRecipes.filter((recipe) => recipe !== null);
@@ -142,7 +211,11 @@ async function getBookmarks(userId) {
 
 async function addBookmark(userId, recipeId, recipeType) {
   const bookmarkRef = doc(db, "users", userId, "bookmarks", recipeId);
-  await setDoc(bookmarkRef, { recipeId, recipeType: recipeType || "community", savedAt: serverTimestamp() });
+  await setDoc(bookmarkRef, {
+    recipeId,
+    recipeType: recipeType || "community",
+    savedAt: serverTimestamp(),
+  });
 }
 
 async function removeBookmark(userId, recipeId) {
@@ -156,7 +229,16 @@ async function getBookmarkedRecipeIds(userId) {
 }
 
 export {
-  getRecipeById, recomputeRecipeAverageRating, isValidRatingValue, getRatingSummaryForRecipe,
-  createRecipe, getRecipesByUser, updateRecipe, deleteRecipe,
-  getBookmarks, addBookmark, removeBookmark, getBookmarkedRecipeIds,
+  getRecipeById,
+  recomputeRecipeAverageRating,
+  isValidRatingValue,
+  getRatingSummaryForRecipe,
+  createRecipe,
+  getRecipesByUser,
+  updateRecipe,
+  deleteRecipe,
+  getBookmarks,
+  addBookmark,
+  removeBookmark,
+  getBookmarkedRecipeIds,
 };
