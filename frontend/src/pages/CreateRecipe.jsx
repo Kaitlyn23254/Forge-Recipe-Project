@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import axios from "axios";
-import { Button, IconButton, Paper, TextField, Typography } from "@mui/material";
+import {
+  Button,
+  IconButton,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import StepField from "../components/StepField";
 import IngredientRow from "../components/IngredientRow";
 import buildRecipeFormData from "../utility/buildRecipeFormData";
 import "../styles/CreateRecipe.css";
+import { getStoredUser } from "../utility/auth";
 
-const HARDCODED_USER_ID = "X7CtVm0P6YeWybH4ZL75";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function CreateRecipe() {
@@ -28,6 +34,8 @@ export default function CreateRecipe() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
+  const { uid: userId } = getStoredUser() ?? {};
+
   useEffect(() => {
     if (!editRecipeId) return;
 
@@ -36,11 +44,18 @@ export default function CreateRecipe() {
       const recipe = response.data;
       setRecipeTitle(recipe.title || "");
       setRecipeDescription(recipe.description || "");
-      setRecipeSteps(Array.isArray(recipe.steps) && recipe.steps.length > 0 ? recipe.steps : [""]);
+      setRecipeSteps(
+        Array.isArray(recipe.steps) && recipe.steps.length > 0
+          ? recipe.steps
+          : [""],
+      );
       setCookingTime(recipe.cookingTime || "");
       setRecipeIngredients(
         Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
-          ? recipe.ingredients.map((ing) => ({ measurement: ing.measurement || "", name: ing.name || ing.ingredient || "" }))
+          ? recipe.ingredients.map((ing) => ({
+              measurement: ing.measurement || "",
+              name: ing.name || ing.ingredient || "",
+            }))
           : [{ measurement: "", name: "" }],
       );
       setImageUrl(recipe.imageUrl || "");
@@ -115,7 +130,8 @@ export default function CreateRecipe() {
       (ingredient) => ingredient.name.trim() && ingredient.measurement.trim(),
     );
     if (!hasFilledIngredient) {
-      errors.recipeIngredients = "At least one ingredient with name and measurement is required.";
+      errors.recipeIngredients =
+        "At least one ingredient with name and measurement is required.";
     }
 
     return errors;
@@ -138,7 +154,7 @@ export default function CreateRecipe() {
     setIsSubmitting(true);
 
     const formData = buildRecipeFormData({
-      userId: HARDCODED_USER_ID,
+      userId: userId,
       recipeTitle,
       recipeDescription,
       recipeSteps,
@@ -166,7 +182,10 @@ export default function CreateRecipe() {
       <Paper className="create-recipe-modal" elevation={3}>
         <div className="create-recipe-modal__header">
           {editRecipeId && (
-            <IconButton className="create-recipe-modal__back-btn" onClick={handleBack}>
+            <IconButton
+              className="create-recipe-modal__back-btn"
+              onClick={handleBack}
+            >
               <ArrowBackIcon />
             </IconButton>
           )}
@@ -219,10 +238,16 @@ export default function CreateRecipe() {
                 stepIndex={stepIndex}
                 onStepChange={handleStepChange}
                 error={Boolean(formErrors.recipeSteps) && stepIndex === 0}
-                helperText={stepIndex === 0 ? formErrors.recipeSteps : undefined}
+                helperText={
+                  stepIndex === 0 ? formErrors.recipeSteps : undefined
+                }
               />
             ))}
-            <Button className="create-recipe__add-btn" onClick={handleAddStep} type="button">
+            <Button
+              className="create-recipe__add-btn"
+              onClick={handleAddStep}
+              type="button"
+            >
               <AddIcon />
               Add Step
             </Button>
@@ -253,7 +278,9 @@ export default function CreateRecipe() {
                 ingredient={recipeIngredient}
                 ingredientIndex={ingredientIndex}
                 onIngredientChange={handleIngredientChange}
-                error={Boolean(formErrors.recipeIngredients) && ingredientIndex === 0}
+                error={
+                  Boolean(formErrors.recipeIngredients) && ingredientIndex === 0
+                }
               />
             ))}
             {formErrors.recipeIngredients && (

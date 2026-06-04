@@ -22,7 +22,9 @@ async function uploadRecipeImage(imageFile, recipeId) {
   const imageExtension = imageFile.originalname.split(".").pop();
   const imageStoragePath = `recipe-images/${recipeId}-${Date.now()}.${imageExtension}`;
   const imageStorageRef = ref(storage, imageStoragePath);
-  await uploadBytes(imageStorageRef, imageFile.buffer, { contentType: imageFile.mimetype });
+  await uploadBytes(imageStorageRef, imageFile.buffer, {
+    contentType: imageFile.mimetype,
+  });
   return getDownloadURL(imageStorageRef);
 }
 
@@ -46,7 +48,7 @@ router.get("/user/:userId", async (req, res) => {
 router.get("/:recipeId", async (req, res) => {
   const { recipeId } = req.params;
   const source = req.query.source;
-  
+
   const recipe = await getRecipeById(recipeId, source);
 
   if (!recipe) {
@@ -75,37 +77,45 @@ router.post("/", multerMemoryUpload.single("image"), async (req, res) => {
   let imageDownloadUrl = "";
   if (req.file) {
     imageDownloadUrl = await uploadRecipeImage(req.file, createdRecipe.id);
-    await updateRecipe({ recipeId: createdRecipe.id, userId, imageUrl: imageDownloadUrl });
+    await updateRecipe({
+      recipeId: createdRecipe.id,
+      userId,
+      imageUrl: imageDownloadUrl,
+    });
   }
 
   res.status(201).json({ ...createdRecipe, imageUrl: imageDownloadUrl });
 });
 
 // PATCH /recipes/:recipeId — edit a recipe (multipart/form-data, image optional)
-router.patch("/:recipeId", multerMemoryUpload.single("image"), async (req, res) => {
-  const { recipeId } = req.params;
-  const { userId, title, description, cookingTime } = req.body;
-  const recipeSteps = parseJsonField(req.body.steps);
-  const recipeIngredients = parseJsonField(req.body.ingredients);
+router.patch(
+  "/:recipeId",
+  multerMemoryUpload.single("image"),
+  async (req, res) => {
+    const { recipeId } = req.params;
+    const { userId, title, description, cookingTime } = req.body;
+    const recipeSteps = parseJsonField(req.body.steps);
+    const recipeIngredients = parseJsonField(req.body.ingredients);
 
-  let imageDownloadUrl;
-  if (req.file) {
-    imageDownloadUrl = await uploadRecipeImage(req.file, recipeId);
-  }
+    let imageDownloadUrl;
+    if (req.file) {
+      imageDownloadUrl = await uploadRecipeImage(req.file, recipeId);
+    }
 
-  const updatedRecipe = await updateRecipe({
-    recipeId,
-    userId,
-    title,
-    description,
-    steps: recipeSteps,
-    cookingTime,
-    ingredients: recipeIngredients,
-    imageUrl: imageDownloadUrl,
-  });
+    const updatedRecipe = await updateRecipe({
+      recipeId,
+      userId,
+      title,
+      description,
+      steps: recipeSteps,
+      cookingTime,
+      ingredients: recipeIngredients,
+      imageUrl: imageDownloadUrl,
+    });
 
-  res.json(updatedRecipe);
-});
+    res.json(updatedRecipe);
+  },
+);
 
 // DELETE /recipes/:recipeId — delete a recipe
 router.delete("/:recipeId", async (req, res) => {
@@ -115,4 +125,3 @@ router.delete("/:recipeId", async (req, res) => {
   await deleteRecipe({ recipeId, userId });
   res.json({ message: "Recipe deleted successfully" });
 });
-

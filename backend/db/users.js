@@ -12,7 +12,9 @@ const usersCollection = collection(db, "users");
 const allowedRoles = new Set(["user", "admin"]);
 
 function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
+  return String(email || "")
+    .trim()
+    .toLowerCase();
 }
 
 async function getUserByEmail(email) {
@@ -22,7 +24,10 @@ async function getUserByEmail(email) {
     return null;
   }
 
-  const userQuery = query(usersCollection, where("email", "==", normalizedEmail));
+  const userQuery = query(
+    usersCollection,
+    where("email", "==", normalizedEmail),
+  );
   const snapshot = await getDocs(userQuery);
 
   if (snapshot.empty) {
@@ -81,6 +86,8 @@ async function loginUser({ email, password }) {
   if (!cleanEmail || !cleanPassword) {
     throw new Error("email and password are required");
   }
+
+  console.log("email is: ", cleanEmail, "Password is: ", cleanPassword);
 
   const user = await getUserByEmail(cleanEmail);
   if (!user || user.password !== cleanPassword) {
