@@ -95,4 +95,9 @@ async function loginUser({ email, password }) {
   };
 }
 
-export { createUser, loginUser };
+async function getUsersCount() {
+  const snapshot = await getDocs(usersCollection);
+  return snapshot.size;
+}
+
+export { createUser, loginUser, getUsersCount };

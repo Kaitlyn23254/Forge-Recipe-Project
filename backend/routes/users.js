@@ -1,5 +1,5 @@
 import express from "express";
-import { createUser, loginUser } from "../db/users.js";
+import { createUser, getUsersCount, loginUser } from "../db/users.js";
 
 const router = express.Router();
 
@@ -24,6 +24,15 @@ router.post("/login", async function (req, res) {
     return res.status(200).json(user);
   } catch (err) {
     return res.status(401).json({ error: err.message || "Unable to log in" });
+  }
+});
+
+router.get("/count", async function (req, res) {
+  try {
+    const count = await getUsersCount();
+    return res.status(200).json({ count });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Unable to load user count" });
   }
 });
 
