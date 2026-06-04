@@ -20,9 +20,16 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import TuneIcon from "@mui/icons-material/Tune";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import IconButton from "@mui/material/IconButton";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import "../styles/Recipes.css";
+
+const HARDCODED_USER_ID = "X7CtVm0P6YeWybH4ZL75";
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
 
@@ -122,7 +129,48 @@ export default function Recipes() {
   const [selectedRecipeOpen, setSelectedRecipeOpen] = useState(false);
   const [selectedRecipeLoading, setSelectedRecipeLoading] = useState(false);
   const [selectedRecipeError, setSelectedRecipeError] = useState("");
+  const [bookmarkedRecipeIds, setBookmarkedRecipeIds] = useState(new Set());
   const selectedRecipeAbortRef = useRef(null);
+
+  useEffect(() => {
+    async function fetchBookmarkedIds() {
+      try {
+        const response = await axios.get(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/ids`);
+        setBookmarkedRecipeIds(new Set(Array.isArray(response.data) ? response.data : []));
+      } catch (err) {
+        console.error("Error fetching bookmarked ids:", err);
+      }
+    }
+    fetchBookmarkedIds();
+  }, []);
+
+  function handleCardClick(event) {
+    const recipeId = event.currentTarget.dataset.recipeId;
+    const clickedRecipe = recipes.find((recipe) => recipe.id === recipeId);
+    if (clickedRecipe) {
+      openRecipeDetails(clickedRecipe);
+    }
+  }
+
+  async function handleBookmarkToggle(event) {
+    event.stopPropagation();
+    const recipeId = event.currentTarget.dataset.recipeId;
+    const isCurrentlyBookmarked = bookmarkedRecipeIds.has(recipeId);
+
+    if (isCurrentlyBookmarked) {
+      await axios.delete(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/${recipeId}`);
+      setBookmarkedRecipeIds((previousIds) => {
+        const updatedIds = new Set(previousIds);
+        updatedIds.delete(recipeId);
+        return updatedIds;
+      });
+    } else {
+      await axios.post(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/${recipeId}`, {
+        recipeType: "official",
+      });
+      setBookmarkedRecipeIds((previousIds) => new Set([...previousIds, recipeId]));
+    }
+  }
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -676,14 +724,31 @@ export default function Recipes() {
           <Box className="recipes-page__grid">
             {recipes.map((card) => (
               <Card key={card.id} elevation={0} className="recipes-page__card">
-                <CardActionArea className="recipes-page__card-action" onClick={() => openRecipeDetails(card)}>
+                <CardActionArea
+                  className="recipes-page__card-action"
+                  data-recipe-id={card.id}
+                  onClick={handleCardClick}
+                >
                   <CardContent className="recipes-page__card-content">
-                    <Box
-                      component="img"
-                      src={card.image}
-                      alt={card.title}
-                      className="recipes-page__card-image"
-                    />
+                    <Box className="recipes-page__card-image-wrapper">
+                      <Box
+                        component="img"
+                        src={card.image}
+                        alt={card.title}
+                        className="recipes-page__card-image"
+                      />
+                      <IconButton
+                        className="recipes-page__card-bookmark-btn"
+                        data-recipe-id={card.id}
+                        onClick={handleBookmarkToggle}
+                      >
+                        {bookmarkedRecipeIds.has(card.id) ? (
+                          <BookmarkIcon fontSize="small" />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Box>
 
                     <Box className="recipes-page__card-meta">
                       <Chip label={card.source} size="small" className="recipes-page__card-chip" />
