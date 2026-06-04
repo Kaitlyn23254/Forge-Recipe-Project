@@ -54,7 +54,7 @@ function normalizeFirestoreRecipe(recipeId, data) {
   };
 }
 
-async function getRecipeById(recipeId, { source = "community" } = {}) {
+async function getRecipeById(recipeId, source = "community") {
   if (!recipeId) throw new Error("recipeId is required");
   if (source !== "official") {
     const recipeRef = doc(db, "recipes", recipeId);
