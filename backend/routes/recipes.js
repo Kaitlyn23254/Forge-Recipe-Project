@@ -7,6 +7,19 @@ import {
 
 const router = express.Router();
 
+router.get("/admin", async function (req, res) {
+  const { search, status } = req.query || {};
+
+  try {
+    const recipes = await getAdminRecipes({ search, status });
+    return res.status(200).json(recipes);
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ error: err.message || "Unable to load recipes" });
+  }
+});
+
 router.get("/:recipeId", async function (req, res) {
   const { recipeId } = req.params;
   const source = req.query.source === "official" ? "official" : "community";
@@ -26,19 +39,6 @@ router.get("/:recipeId", async function (req, res) {
       return res.status(404).json({ error: err.message });
     }
     return res.status(500).json({ error: err.message });
-  }
-});
-
-router.get("/admin", async function (req, res) {
-  const { search, status } = req.query || {};
-
-  try {
-    const recipes = await getAdminRecipes({ search, status });
-    return res.status(200).json(recipes);
-  } catch (err) {
-    return res
-      .status(500)
-      .json({ error: err.message || "Unable to load recipes" });
   }
 });
 
