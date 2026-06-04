@@ -23,8 +23,8 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteConfirmDialog from "../components/DeleteConfirmDialog";
 import "../styles/MyRecipes.css";
+import { getStoredUser } from "../utility/auth";
 
-const HARDCODED_USER_ID = "X7CtVm0P6YeWybH4ZL75";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function MyRecipes() {
@@ -41,10 +41,12 @@ export default function MyRecipes() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [recipeToDeleteId, setRecipeToDeleteId] = useState(null);
 
+  const { uid: userId } = getStoredUser() ?? {};
+
   async function fetchCreatedRecipes() {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/recipes/user/${HARDCODED_USER_ID}`);
+      const response = await axios.get(`${BASE_URL}/recipes/user/${userId}`);
       setCreatedRecipes(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Error fetching created recipes:", err);
@@ -56,7 +58,7 @@ export default function MyRecipes() {
   async function fetchSavedRecipes() {
     setIsLoading(true);
     try {
-      const response = await axios.get(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks`);
+      const response = await axios.get(`${BASE_URL}/users/${userId}/bookmarks`);
       setSavedRecipes(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Error fetching saved recipes:", err);
@@ -67,8 +69,12 @@ export default function MyRecipes() {
 
   async function fetchBookmarkedIds() {
     try {
-      const response = await axios.get(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/ids`);
-      setBookmarkedRecipeIds(new Set(Array.isArray(response.data) ? response.data : []));
+      const response = await axios.get(
+        `${BASE_URL}/users/${userId}/bookmarks/ids`,
+      );
+      setBookmarkedRecipeIds(
+        new Set(Array.isArray(response.data) ? response.data : []),
+      );
     } catch (err) {
       console.error("Error fetching bookmarked ids:", err);
     }
@@ -107,7 +113,7 @@ export default function MyRecipes() {
     const isCurrentlyBookmarked = bookmarkedRecipeIds.has(recipeId);
 
     if (isCurrentlyBookmarked) {
-      await axios.delete(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/${recipeId}`);
+      await axios.delete(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
       setBookmarkedRecipeIds((previousIds) => {
         const updatedIds = new Set(previousIds);
         updatedIds.delete(recipeId);
@@ -119,8 +125,10 @@ export default function MyRecipes() {
         );
       }
     } else {
-      await axios.post(`${BASE_URL}/users/${HARDCODED_USER_ID}/bookmarks/${recipeId}`);
-      setBookmarkedRecipeIds((previousIds) => new Set([...previousIds, recipeId]));
+      await axios.post(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
+      setBookmarkedRecipeIds(
+        (previousIds) => new Set([...previousIds, recipeId]),
+      );
     }
   }
 
@@ -150,10 +158,12 @@ export default function MyRecipes() {
   async function handleDeleteConfirm() {
     setDeleteConfirmOpen(false);
     await axios.delete(`${BASE_URL}/recipes/${recipeToDeleteId}`, {
-      data: { userId: HARDCODED_USER_ID },
+      data: { userId: userId },
     });
     setCreatedRecipes((previousRecipes) =>
-      previousRecipes.filter((createdRecipe) => createdRecipe.id !== recipeToDeleteId),
+      previousRecipes.filter(
+        (createdRecipe) => createdRecipe.id !== recipeToDeleteId,
+      ),
     );
     setRecipeToDeleteId(null);
   }
@@ -246,7 +256,11 @@ export default function MyRecipes() {
         {!isLoading && displayedRecipes.length > 0 && (
           <div className="my-recipes-page__grid">
             {displayedRecipes.map((recipe) => (
-              <Card key={recipe.id} elevation={0} className="my-recipes-page__card">
+              <Card
+                key={recipe.id}
+                elevation={0}
+                className="my-recipes-page__card"
+              >
                 <CardActionArea
                   className="my-recipes-page__card-action"
                   data-recipe-id={recipe.id}
@@ -256,7 +270,10 @@ export default function MyRecipes() {
                     <Box className="my-recipes-page__card-image-wrapper">
                       <Box
                         component="img"
-                        src={recipe.imageUrl || "https://placehold.co/400x275?text=No+Image"}
+                        src={
+                          recipe.imageUrl ||
+                          "https://placehold.co/400x275?text=No+Image"
+                        }
                         alt={recipe.title}
                         className="my-recipes-page__card-image"
                       />
@@ -275,7 +292,11 @@ export default function MyRecipes() {
                     </Box>
                     <Box className="my-recipes-page__card-body">
                       <Box className="my-recipes-page__card-title-row">
-                        <Typography variant="h6" component="h2" className="my-recipes-page__card-title">
+                        <Typography
+                          variant="h6"
+                          component="h2"
+                          className="my-recipes-page__card-title"
+                        >
                           {recipe.title}
                         </Typography>
                         {activeTab === "created" && (
@@ -292,7 +313,10 @@ export default function MyRecipes() {
                       {recipe.cookingTime && (
                         <Box className="my-recipes-page__card-time">
                           <AccessTimeIcon className="my-recipes-page__card-time-icon" />
-                          <Typography variant="body2" className="my-recipes-page__card-time-text">
+                          <Typography
+                            variant="body2"
+                            className="my-recipes-page__card-time-text"
+                          >
                             {recipe.cookingTime}
                           </Typography>
                         </Box>
@@ -300,7 +324,6 @@ export default function MyRecipes() {
                     </Box>
                   </CardContent>
                 </CardActionArea>
-
               </Card>
             ))}
           </div>
