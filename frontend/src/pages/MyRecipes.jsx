@@ -27,6 +27,10 @@ import { getStoredUser } from "../utility/auth";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
+function resolveRecipeSource(recipe) {
+  return recipe.recipeType === "official" ? "official" : "community";
+}
+
 export default function MyRecipes() {
   const navigate = useNavigate();
 
@@ -103,14 +107,16 @@ export default function MyRecipes() {
   }
 
   function handleCardClick(event) {
-    const recipeId = event.currentTarget.dataset.recipeId;
-    navigate(`/recipes/${recipeId}`);
+    const { recipeId, recipeSource } = event.currentTarget.dataset;
+    navigate(`/recipes/${recipeId}?source=${recipeSource}`);
   }
 
   async function handleBookmarkClick(event) {
     event.stopPropagation();
-    const recipeId = event.currentTarget.dataset.recipeId;
+    const { recipeId, recipeType } = event.currentTarget.dataset;
     const isCurrentlyBookmarked = bookmarkedRecipeIds.has(recipeId);
+
+    console.log("Recipe id: ", recipeId, "bookmarked: ", isCurrentlyBookmarked);
 
     if (isCurrentlyBookmarked) {
       await axios.delete(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
@@ -125,7 +131,9 @@ export default function MyRecipes() {
         );
       }
     } else {
-      await axios.post(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
+      await axios.post(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`, {
+        recipeType: recipeType || "community",
+      });
       setBookmarkedRecipeIds(
         (previousIds) => new Set([...previousIds, recipeId]),
       );
@@ -255,77 +263,82 @@ export default function MyRecipes() {
 
         {!isLoading && displayedRecipes.length > 0 && (
           <div className="my-recipes-page__grid">
-            {displayedRecipes.map((recipe) => (
-              <Card
-                key={recipe.id}
-                elevation={0}
-                className="my-recipes-page__card"
-              >
-                <CardActionArea
-                  className="my-recipes-page__card-action"
-                  data-recipe-id={recipe.id}
-                  onClick={handleCardClick}
+            {displayedRecipes.map((recipe) => {
+              const recipeSource = resolveRecipeSource(recipe);
+              return (
+                <Card
+                  key={recipe.id}
+                  elevation={0}
+                  className="my-recipes-page__card"
                 >
-                  <CardContent className="my-recipes-page__card-content">
-                    <Box className="my-recipes-page__card-image-wrapper">
-                      <Box
-                        component="img"
-                        src={
-                          recipe.imageUrl ||
-                          "https://placehold.co/400x275?text=No+Image"
-                        }
-                        alt={recipe.title}
-                        className="my-recipes-page__card-image"
-                      />
-                      <IconButton
-                        size="small"
-                        className="my-recipes-page__bookmark-btn"
-                        data-recipe-id={recipe.id}
-                        onClick={handleBookmarkClick}
-                      >
-                        {bookmarkedRecipeIds.has(recipe.id) ? (
-                          <BookmarkIcon fontSize="small" />
-                        ) : (
-                          <BookmarkBorderIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </Box>
-                    <Box className="my-recipes-page__card-body">
-                      <Box className="my-recipes-page__card-title-row">
-                        <Typography
-                          variant="h6"
-                          component="h2"
-                          className="my-recipes-page__card-title"
+                  <CardActionArea
+                    className="my-recipes-page__card-action"
+                    data-recipe-id={recipe.id}
+                    data-recipe-source={recipeSource}
+                    onClick={handleCardClick}
+                  >
+                    <CardContent className="my-recipes-page__card-content">
+                      <Box className="my-recipes-page__card-image-wrapper">
+                        <Box
+                          component="img"
+                          src={
+                            recipe.imageUrl ||
+                            "https://placehold.co/400x275?text=No+Image"
+                          }
+                          alt={recipe.title}
+                          className="my-recipes-page__card-image"
+                        />
+                        <IconButton
+                          size="small"
+                          className="my-recipes-page__bookmark-btn"
+                          data-recipe-id={recipe.id}
+                          data-recipe-type={recipeSource}
+                          onClick={handleBookmarkClick}
                         >
-                          {recipe.title}
-                        </Typography>
-                        {activeTab === "created" && (
-                          <IconButton
-                            size="small"
-                            className="my-recipes-page__menu-btn"
-                            data-recipe-id={recipe.id}
-                            onClick={handleOpenMenu}
+                          {bookmarkedRecipeIds.has(recipe.id) ? (
+                            <BookmarkIcon fontSize="small" />
+                          ) : (
+                            <BookmarkBorderIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </Box>
+                      <Box className="my-recipes-page__card-body">
+                        <Box className="my-recipes-page__card-title-row">
+                          <Typography
+                            variant="h6"
+                            component="h2"
+                            className="my-recipes-page__card-title"
                           >
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
+                            {recipe.title}
+                          </Typography>
+                          {activeTab === "created" && (
+                            <IconButton
+                              size="small"
+                              className="my-recipes-page__menu-btn"
+                              data-recipe-id={recipe.id}
+                              onClick={handleOpenMenu}
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Box>
+                        {recipe.cookingTime && (
+                          <Box className="my-recipes-page__card-time">
+                            <AccessTimeIcon className="my-recipes-page__card-time-icon" />
+                            <Typography
+                              variant="body2"
+                              className="my-recipes-page__card-time-text"
+                            >
+                              {recipe.cookingTime}
+                            </Typography>
+                          </Box>
                         )}
                       </Box>
-                      {recipe.cookingTime && (
-                        <Box className="my-recipes-page__card-time">
-                          <AccessTimeIcon className="my-recipes-page__card-time-icon" />
-                          <Typography
-                            variant="body2"
-                            className="my-recipes-page__card-time-text"
-                          >
-                            {recipe.cookingTime}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            ))}
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              );
+            })}
           </div>
         )}
 

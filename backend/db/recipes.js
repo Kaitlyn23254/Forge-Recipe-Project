@@ -153,6 +153,7 @@ async function getRecipesByUser(userId) {
   return snapshot.docs.map((recipeDoc) => ({
     id: recipeDoc.id,
     ...recipeDoc.data(),
+    recipeType: "community",
   }));
 }
 
