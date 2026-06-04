@@ -10,6 +10,7 @@
 }
 
 .admin-page__header {
+  padding-top: 24px;
   margin-bottom: 32px;
 }
 
@@ -163,7 +164,7 @@
 }
 
 .admin-page__search {
-  margin-bottom: 16px;
+  margin-bottom: 32px;
 }
 
 .admin-page__search .MuiOutlinedInput-root {
@@ -197,7 +198,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 20px;
-  margin-bottom: 16px;
+  margin-top: 8px;
+  margin-bottom: 28px;
 }
 
 .admin-page__recipes-count,
@@ -250,6 +252,7 @@
 }
 
 .admin-page__table-container {
+  margin-top: 8px;
   border-radius: 16px;
   border: 1px solid rgba(31, 111, 120, 0.12);
   background: #fffaf2;
