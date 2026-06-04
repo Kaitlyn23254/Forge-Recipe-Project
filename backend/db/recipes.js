@@ -99,7 +99,7 @@ async function createRecipe({ userId, title, description, steps, cookingTime, in
 
 async function getRecipesByUser(userId) {
   const snapshot = await getDocs(query(recipesCollection, where("createdBy", "==", userId)));
-  return snapshot.docs.map((recipeDoc) => ({ id: recipeDoc.id, ...recipeDoc.data() }));
+  return snapshot.docs.map((recipeDoc) => ({ id: recipeDoc.id, ...recipeDoc.data(), recipeType: "community", }));
 }
 
 async function updateRecipe({ recipeId, userId, title, description, steps, cookingTime, ingredients, imageUrl }) {
@@ -133,7 +133,7 @@ async function getBookmarks(userId) {
   const savedRecipes = await Promise.all(
     bookmarkDocs.map(async (bookmark) => {
       const bookmarkSource = bookmark.recipeType === "official" ? "official" : "community";
-      try { return await getRecipeById(bookmark.recipeId, { source: bookmarkSource }); }
+      try { return await getRecipeById(bookmark.recipeId, bookmarkSource); }
       catch { return null; }
     }),
   );
