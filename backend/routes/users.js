@@ -5,9 +5,9 @@ import {
   removeBookmark,
   getBookmarkedRecipeIds,
 } from "../db/recipes.js";
-import { createUser, loginUser } from "../db/users.js";
+import { createUser, getUsersCount, loginUser } from "../db/users.js";
 
-export const router = express.Router();
+const router = express.Router();
 
 router.post("/register", async function (req, res) {
   const { name, email, password, role } = req.body || {};
@@ -61,3 +61,14 @@ router.delete("/:userId/bookmarks/:recipeId", async (req, res) => {
   await removeBookmark(userId, recipeId);
   res.json({ message: "Recipe removed from bookmarks" });
 });
+
+router.get("/count", async function (req, res) {
+  try {
+    const count = await getUsersCount();
+    return res.status(200).json({ count });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Unable to load user count" });
+  }
+});
+
+export { router };

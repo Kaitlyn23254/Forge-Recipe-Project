@@ -12,9 +12,11 @@ import {
   addBookmark,
   removeBookmark,
   getBookmarkedRecipeIds,
+  getAdminRecipes,
+  updateRecipeStatus,
 } from "../db/recipes.js";
 
-export const router = express.Router();
+const router = express.Router();
 
 const multerMemoryUpload = multer({ storage: multer.memoryStorage() });
 
@@ -44,8 +46,20 @@ router.get("/user/:userId", async (req, res) => {
   res.json(userRecipes);
 });
 
-// GET /recipes/:recipeId — get a single recipe
-router.get("/:recipeId", async (req, res) => {
+router.get("/admin", async function (req, res) {
+  const { search, status } = req.query || {};
+
+  try {
+    const recipes = await getAdminRecipes({ search, status });
+    return res.status(200).json(recipes);
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ error: err.message || "Unable to load recipes" });
+  }
+});
+
+router.get("/:recipeId", async function (req, res) {
   const { recipeId } = req.params;
   const source = req.query.source;
 
@@ -116,6 +130,24 @@ router.patch(
     res.json(updatedRecipe);
   },
 );
+ 
+router.patch("/:recipeId/status", async function (req, res) {
+  const { recipeId } = req.params;
+  const { status } = req.body || {};
+
+  if (!recipeId || !status) {
+    return res.status(400).json({ error: "recipeId and status are required" });
+  }
+
+  try {
+    const updatedRecipe = await updateRecipeStatus(recipeId, status);
+    return res.status(200).json(updatedRecipe);
+  } catch (err) {
+    const message = err.message || "Unable to update recipe status";
+    const statusCode = message === "Recipe not found" ? 404 : 400;
+    return res.status(statusCode).json({ error: message });
+  }
+});
 
 // DELETE /recipes/:recipeId — delete a recipe
 router.delete("/:recipeId", async (req, res) => {
@@ -125,3 +157,5 @@ router.delete("/:recipeId", async (req, res) => {
   await deleteRecipe({ recipeId, userId });
   res.json({ message: "Recipe deleted successfully" });
 });
+
+export { router };

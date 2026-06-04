@@ -1,0 +1,370 @@
+.admin-page {
+  min-height: 100vh;
+  padding: 32px 16px 48px;
+  background: #fff1dc;
+}
+
+.admin-page__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-page__header {
+  padding-top: 24px;
+  margin-bottom: 32px;
+}
+
+.admin-page__eyebrow {
+  display: block;
+  color: #1f6f78 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2em !important;
+  margin-bottom: 8px;
+}
+
+.admin-page__title {
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  color: #1f1f1f !important;
+}
+
+.admin-page__subtitle {
+  margin-top: 12px !important;
+  max-width: 640px;
+  color: #6c5f54 !important;
+}
+
+.admin-page__error {
+  margin-bottom: 24px;
+}
+
+.admin-page__cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 600px) {
+  .admin-page__cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .admin-page__cards {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.admin-page__card {
+  height: 100%;
+  border-radius: 16px !important;
+  background: #fffaf2 !important;
+  border: 1px solid rgba(31, 111, 120, 0.12) !important;
+  box-shadow: 0 12px 28px rgba(31, 31, 31, 0.06) !important;
+}
+
+.admin-page__card-content {
+  padding: 24px !important;
+}
+
+.admin-page__card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-page__card-label {
+  display: block;
+  color: #6c5f54 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.admin-page__card-value {
+  margin: 6px 0 0 !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+}
+
+.admin-page__card--clickable {
+  cursor: pointer;
+}
+
+.admin-page__card--clickable:focus-visible {
+  outline: 2px solid #1f6f78;
+  outline-offset: 2px;
+}
+
+.admin-page__card--active {
+  border-color: #1f6f78 !important;
+  box-shadow: 0 14px 32px rgba(31, 111, 120, 0.16) !important;
+}
+
+.admin-page__card-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.admin-page__card--pending {
+  --admin-accent: #c98a1f;
+}
+
+.admin-page__card--approved {
+  --admin-accent: #1f6f78;
+}
+
+.admin-page__card--rejected {
+  --admin-accent: #b44a3c;
+}
+
+.admin-page__card--users {
+  --admin-accent: #5c4d7a;
+}
+
+.admin-page__card--pending .admin-page__card-value,
+.admin-page__card--pending .admin-page__card-icon,
+.admin-page__card--pending .admin-page__card-spinner {
+  color: var(--admin-accent);
+}
+
+.admin-page__card--approved .admin-page__card-value,
+.admin-page__card--approved .admin-page__card-icon,
+.admin-page__card--approved .admin-page__card-spinner {
+  color: var(--admin-accent);
+}
+
+.admin-page__card--rejected .admin-page__card-value,
+.admin-page__card--rejected .admin-page__card-icon,
+.admin-page__card--rejected .admin-page__card-spinner {
+  color: var(--admin-accent);
+}
+
+.admin-page__card--users .admin-page__card-value,
+.admin-page__card--users .admin-page__card-icon,
+.admin-page__card--users .admin-page__card-spinner {
+  color: var(--admin-accent);
+}
+
+.admin-page__recipes {
+  margin-top: 40px;
+}
+
+.admin-page__section-title {
+  margin-bottom: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  color: #1f1f1f !important;
+}
+
+.admin-page__search {
+  margin-bottom: 32px;
+}
+
+.admin-page__search .MuiOutlinedInput-root {
+  border-radius: 999px;
+  background-color: #fff7ea;
+}
+
+.admin-page__search .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(31, 111, 120, 0.18);
+}
+
+.admin-page__search .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(31, 111, 120, 0.32);
+}
+
+.admin-page__search .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #1f6f78;
+}
+
+.admin-page__search .MuiOutlinedInput-input {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.admin-page__search-icon {
+  color: #1f6f78;
+}
+
+.admin-page__recipes-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: 8px;
+  margin-bottom: 28px;
+}
+
+.admin-page__recipes-count,
+.admin-page__recipes-filter {
+  color: #6c5f54 !important;
+}
+
+.admin-page__recipes-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-page__clear-filter {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #1f6f78;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.admin-page__clear-filter:hover {
+  color: #195b62;
+}
+
+.admin-page__recipes-feedback,
+.admin-page__recipes-error {
+  margin-bottom: 16px;
+}
+
+.admin-page__action-button--approve {
+  background: #e8f4f5 !important;
+}
+
+.admin-page__action-button--reject,
+.admin-page__action-button--unpublish {
+  border-color: rgba(180, 74, 60, 0.35) !important;
+  color: #b44a3c !important;
+}
+
+.admin-page__action-button--reapprove {
+  background: #e8f4f5 !important;
+}
+
+.admin-page__action-button:disabled {
+  opacity: 0.7;
+}
+
+.admin-page__table-container {
+  margin-top: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 111, 120, 0.12);
+  background: #fffaf2;
+  overflow-x: auto;
+}
+
+.admin-page__table {
+  min-width: 720px;
+}
+
+.admin-page__table-head-cell {
+  font-weight: 700 !important;
+  color: #1f1f1f !important;
+  background: #fff7ea;
+  border-bottom: 1px solid rgba(31, 111, 120, 0.12) !important;
+}
+
+.admin-page__table-head-cell--actions {
+  min-width: 220px;
+}
+
+.admin-page__table-row:hover {
+  background: rgba(31, 111, 120, 0.04);
+}
+
+.admin-page__table-cell {
+  color: #2f2418 !important;
+  border-bottom: 1px solid rgba(31, 111, 120, 0.08) !important;
+  vertical-align: middle !important;
+}
+
+.admin-page__table-cell--actions {
+  min-width: 220px;
+}
+
+.admin-page__table-message-cell {
+  text-align: center !important;
+  padding: 32px 16px !important;
+  color: #6c5f54 !important;
+}
+
+.admin-page__table-message-cell .MuiTypography-root {
+  margin-top: 8px;
+}
+
+.admin-page__table-spinner {
+  color: #1f6f78 !important;
+}
+
+.admin-page__recipe-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+}
+
+.admin-page__recipe-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(31, 111, 120, 0.12);
+}
+
+.admin-page__recipe-image--placeholder {
+  display: grid;
+  place-items: center;
+  background: #fff7ea;
+  color: #6c5f54;
+  text-align: center;
+  padding: 4px;
+}
+
+.admin-page__recipe-image--placeholder .MuiTypography-root {
+  line-height: 1.2;
+  font-size: 0.65rem !important;
+}
+
+.admin-page__recipe-title {
+  font-weight: 700 !important;
+  color: #1f1f1f !important;
+}
+
+.admin-page__status-chip {
+  font-weight: 700 !important;
+}
+
+.admin-page__status-chip--pending {
+  background: #fff6e8 !important;
+  color: #c98a1f !important;
+}
+
+.admin-page__status-chip--approved {
+  background: #e8f4f5 !important;
+  color: #1f6f78 !important;
+}
+
+.admin-page__status-chip--rejected {
+  background: #fbecea !important;
+  color: #b44a3c !important;
+}
+
+.admin-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-page__action-button {
+  text-transform: none !important;
+  font-weight: 700 !important;
+  border-color: rgba(31, 111, 120, 0.28) !important;
+  color: #1f6f78 !important;
+}

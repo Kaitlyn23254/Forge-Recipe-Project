@@ -16,6 +16,7 @@ import {
   isValidRatingValue,
   recomputeRecipeAverageRating,
 } from "./recipes.js";
+import { attachUsernames } from "./users.js";
 
 const commentsCollection = collection(db, "comments");
 
@@ -73,7 +74,7 @@ async function getCommentsByRecipeId(recipeId, userId) {
   // Sort by descending likes
   withLikes.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
 
-  return withLikes;
+  return attachUsernames(withLikes);
 }
 
 async function postComment({ recipeId, userId, text, rating }) {
@@ -112,12 +113,16 @@ async function postComment({ recipeId, userId, text, rating }) {
   const created = commentSnap.exists() ? commentSnap.data() : commentData;
   const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
 
-  return {
-    id: commentRef.id,
-    ...created,
-    likeCount,
-    likedByUser: false,
-  };
+  const [withUsername] = await attachUsernames([
+    {
+      id: commentRef.id,
+      ...created,
+      likeCount,
+      likedByUser: false,
+    },
+  ]);
+
+  return withUsername;
 }
 
 async function likeComment(commentId, userId) {
@@ -157,12 +162,16 @@ async function likeComment(commentId, userId) {
   const commentData = commentSnap.exists() ? commentSnap.data() : {};
   const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
 
-  return {
-    id: commentId,
-    ...commentData,
-    likeCount,
-    likedByUser: likeSnap.exists(),
-  };
+  const [withUsername] = await attachUsernames([
+    {
+      id: commentId,
+      ...commentData,
+      likeCount,
+      likedByUser: likeSnap.exists(),
+    },
+  ]);
+
+  return withUsername;
 }
 
 async function editComment({ commentId, userId, text }) {
@@ -189,12 +198,16 @@ async function editComment({ commentId, userId, text }) {
   const commentData = commentSnap.exists() ? commentSnap.data() : {};
   const likeCount = metaSnap.exists() ? (metaSnap.data().likes ?? 0) : 0;
 
-  return {
-    id: commentId,
-    ...commentData,
-    likeCount,
-    likedByUser: userLikeSnap.exists(),
-  };
+  const [withUsername] = await attachUsernames([
+    {
+      id: commentId,
+      ...commentData,
+      likeCount,
+      likedByUser: userLikeSnap.exists(),
+    },
+  ]);
+
+  return withUsername;
 }
 
 async function deleteComment({ commentId, userId }) {

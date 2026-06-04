@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router";
 import IngredientsList from "../components/IngredientsList";
@@ -11,15 +11,13 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import { timestampToString } from "../utility/timestampToString";
+import { getStoredUser } from "../utility/auth";
 
 import "../styles/RecipeDetails.css";
 import "../styles/Recipes.css";
 import CommentSection from "../components/CommentSection";
 import Comment from "../components/Comment";
 import ChatBox from "../components/ChatBox";
-
-const userId = "X7CtVm0P6YeWybH4ZL75";
-const username = "johnbob";
 
 function normalizeInstructions(instructions) {
   if (Array.isArray(instructions)) return instructions;
@@ -47,6 +45,8 @@ export default function RecipeDetails() {
   const [recipeLoading, setRecipeLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [recipeError, setRecipeError] = useState("");
+
+  const { uid: userId } = getStoredUser() ?? {};
 
   const fetchRecipe = useCallback(async () => {
     if (!recipeId) return;
@@ -290,7 +290,7 @@ export default function RecipeDetails() {
   };
 
   const handleSaveRecipe = async () => {
-    if (!recipeId) return;
+    if (!userId || !recipeId) return;
 
     const previousSaved = isSaved;
     setIsSaved(!previousSaved);
@@ -446,7 +446,7 @@ export default function RecipeDetails() {
                         c.id ?? `${c.text}-${c.createdAt?.seconds ?? "unknown"}`
                       }
                       id={c.id}
-                      username={username}
+                      username={c.username ?? "Unknown user"}
                       text={c.text}
                       numLikes={c.likeCount}
                       likedByUser={c.likedByUser ?? false}
