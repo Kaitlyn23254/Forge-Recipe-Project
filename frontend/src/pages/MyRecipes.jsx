@@ -8,12 +8,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Button,
   IconButton,
   InputAdornment,
   Menu,
@@ -27,6 +21,7 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
+import DeleteConfirmDialog from "../components/DeleteConfirmDialog";
 import "../styles/MyRecipes.css";
 
 const HARDCODED_USER_ID = "X7CtVm0P6YeWybH4ZL75";
@@ -279,9 +274,21 @@ export default function MyRecipes() {
                       </IconButton>
                     </Box>
                     <Box className="my-recipes-page__card-body">
-                      <Typography variant="h6" component="h2" className="my-recipes-page__card-title">
-                        {recipe.title}
-                      </Typography>
+                      <Box className="my-recipes-page__card-title-row">
+                        <Typography variant="h6" component="h2" className="my-recipes-page__card-title">
+                          {recipe.title}
+                        </Typography>
+                        {activeTab === "created" && (
+                          <IconButton
+                            size="small"
+                            className="my-recipes-page__menu-btn"
+                            data-recipe-id={recipe.id}
+                            onClick={handleOpenMenu}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
                       {recipe.cookingTime && (
                         <Box className="my-recipes-page__card-time">
                           <AccessTimeIcon className="my-recipes-page__card-time-icon" />
@@ -294,16 +301,6 @@ export default function MyRecipes() {
                   </CardContent>
                 </CardActionArea>
 
-                {activeTab === "created" && (
-                  <IconButton
-                    size="small"
-                    className="my-recipes-page__menu-btn"
-                    data-recipe-id={recipe.id}
-                    onClick={handleOpenMenu}
-                  >
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
-                )}
               </Card>
             ))}
           </div>
@@ -318,20 +315,11 @@ export default function MyRecipes() {
           <MenuItem onClick={handleDeleteClick}>Delete</MenuItem>
         </Menu>
 
-        <Dialog open={deleteConfirmOpen} onClose={handleDeleteCancel}>
-          <DialogTitle>Delete Recipe</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Are you sure you want to delete this recipe? This cannot be undone.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDeleteCancel}>Cancel</Button>
-            <Button onClick={handleDeleteConfirm} className="my-recipes-page__delete-confirm-btn">
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <DeleteConfirmDialog
+          open={deleteConfirmOpen}
+          onCancel={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+        />
       </div>
     </div>
   );
