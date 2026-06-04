@@ -13,7 +13,9 @@ const usersCollection = collection(db, "users");
 const allowedRoles = new Set(["user", "admin"]);
 
 function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
+  return String(email || "")
+    .trim()
+    .toLowerCase();
 }
 
 async function getUserByEmail(email) {
@@ -23,7 +25,10 @@ async function getUserByEmail(email) {
     return null;
   }
 
-  const userQuery = query(usersCollection, where("email", "==", normalizedEmail));
+  const userQuery = query(
+    usersCollection,
+    where("email", "==", normalizedEmail),
+  );
   const snapshot = await getDocs(userQuery);
 
   if (snapshot.empty) {
@@ -100,4 +105,46 @@ async function getUsersCount() {
   const snapshot = await getDocs(usersCollection);
   return snapshot.size;
 }
+
+async function getUserById(userId) {
+  if (!userId) {
+    return null;
+  }
+
+  const userRef = doc(db, "users", userId);
+  const snapshot = await getDoc(userRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  };
+}
+
+async function attachUsernames(items) {
+  if (!items?.length) {
+    return items ?? [];
+  }
+
+  const userIds = [
+    ...new Set(items.map((item) => item.userId).filter(Boolean)),
+  ];
+  const nameByUserId = new Map();
+
+  await Promise.all(
+    userIds.map(async (id) => {
+      const user = await getUserById(id);
+      nameByUserId.set(id, user?.name ?? "Unknown user");
+    }),
+  );
+
+  return items.map((item) => ({
+    ...item,
+    username: nameByUserId.get(item.userId) ?? "Unknown user",
+  }));
+}
+
 export { createUser, loginUser, getUserById, attachUsernames };
