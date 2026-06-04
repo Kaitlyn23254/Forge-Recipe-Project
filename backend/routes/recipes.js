@@ -45,7 +45,9 @@ router.get("/user/:userId", async (req, res) => {
 // GET /recipes/:recipeId — get a single recipe
 router.get("/:recipeId", async (req, res) => {
   const { recipeId } = req.params;
-  const recipe = await getRecipeById(recipeId);
+  const source = req.query.source;
+  
+  const recipe = await getRecipeById(recipeId, source);
 
   if (!recipe) {
     return res.status(404).json({ error: "Recipe not found" });
