@@ -169,6 +169,38 @@
   font-size: 0.8rem !important;
 }
 
+.my-recipes-page__card-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.my-recipes-page__card-status-text {
+  color: #6c5f54 !important;
+  line-height: 1.3 !important;
+}
+
+.my-recipes-page__status-chip {
+  font-weight: 700 !important;
+}
+
+.my-recipes-page__status-chip--pending {
+  background: #fff6e8 !important;
+  color: #c98a1f !important;
+}
+
+.my-recipes-page__status-chip--approved {
+  background: #e8f4f5 !important;
+  color: #1f6f78 !important;
+}
+
+.my-recipes-page__status-chip--rejected {
+  background: #fbecea !important;
+  color: #b44a3c !important;
+}
+
 .my-recipes-page__card-title-row {
   display: flex;
   align-items: flex-start;

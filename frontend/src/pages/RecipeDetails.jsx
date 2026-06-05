@@ -10,6 +10,8 @@ import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import Chip from "@mui/material/Chip";
+import Box from "@mui/material/Box";
 import { API_BASE_URL } from "../utility/api";
 import { timestampToString } from "../utility/timestampToString";
 import { getStoredUser } from "../utility/auth";
@@ -19,6 +21,18 @@ import "../styles/Recipes.css";
 import CommentSection from "../components/CommentSection";
 import Comment from "../components/Comment";
 import ChatBox from "../components/ChatBox";
+
+const RECIPE_STATUS_LABELS = {
+  pending: "Pending Review",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
+const RECIPE_STATUS_DESCRIPTIONS = {
+  pending: "Your recipe is awaiting admin approval.",
+  approved: "Your recipe is published and visible to everyone.",
+  rejected: "Your recipe was not approved. You can edit and resubmit it.",
+};
 
 function normalizeInstructions(instructions) {
   if (Array.isArray(instructions)) return instructions;
@@ -329,6 +343,9 @@ export default function RecipeDetails() {
   }));
   const averageRating = recipe?.averageRating ?? null;
   const ratingCount = recipe?.ratingCount ?? 0;
+  const isOwnCommunityRecipe =
+    source === "community" && recipe?.createdBy === userId;
+  const recipeStatus = recipe?.status || "pending";
 
   const isLoading = commentsLoading || recipeLoading;
 
@@ -380,6 +397,23 @@ export default function RecipeDetails() {
                   </IconButton>
                 </div>
                 <h4 className="recipe-details-tags">{recipeTags}</h4>
+                {isOwnCommunityRecipe ? (
+                  <Box className="recipe-details-status">
+                    <Chip
+                      label={
+                        RECIPE_STATUS_LABELS[recipeStatus] || "Pending Review"
+                      }
+                      size="small"
+                      className={`recipe-details-status__chip recipe-details-status__chip--${recipeStatus}`}
+                    />
+                    <Typography
+                      variant="body2"
+                      className="recipe-details-status__text"
+                    >
+                      {RECIPE_STATUS_DESCRIPTIONS[recipeStatus]}
+                    </Typography>
+                  </Box>
+                ) : null}
                 <div className="recipe-details-average-rating">
                   <Rating value={averageRating ?? 0} precision={0.5} readOnly />
                   <Typography variant="body2" component="span">

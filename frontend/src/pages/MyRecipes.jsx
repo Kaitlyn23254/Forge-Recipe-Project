@@ -28,8 +28,32 @@ import { getStoredUser } from "../utility/auth";
 
 const BASE_URL = API_BASE_URL;
 
+const RECIPE_STATUS_LABELS = {
+  pending: "Pending Review",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
+const RECIPE_STATUS_DESCRIPTIONS = {
+  pending: "Awaiting admin approval",
+  approved: "Published and visible to everyone",
+  rejected: "Not approved — edit and resubmit",
+};
+
 function resolveRecipeSource(recipe) {
   return recipe.recipeType === "official" ? "official" : "community";
+}
+
+function RecipeStatusChip({ status }) {
+  const resolvedStatus = status || "pending";
+
+  return (
+    <Chip
+      label={RECIPE_STATUS_LABELS[resolvedStatus] || "Pending Review"}
+      size="small"
+      className={`my-recipes-page__status-chip my-recipes-page__status-chip--${resolvedStatus}`}
+    />
+  );
 }
 
 export default function MyRecipes() {
@@ -331,6 +355,21 @@ export default function MyRecipes() {
                           </IconButton>
                         ) : null}
                       </Box>
+                      {activeTab === "created" ? (
+                        <Box className="my-recipes-page__card-status">
+                          <RecipeStatusChip status={recipe.status} />
+                          <Typography
+                            variant="caption"
+                            className="my-recipes-page__card-status-text"
+                          >
+                            {
+                              RECIPE_STATUS_DESCRIPTIONS[
+                                recipe.status || "pending"
+                              ]
+                            }
+                          </Typography>
+                        </Box>
+                      ) : null}
                       {recipe.cookingTime ? (
                         <CardActionArea
                           className="my-recipes-page__card-action"
