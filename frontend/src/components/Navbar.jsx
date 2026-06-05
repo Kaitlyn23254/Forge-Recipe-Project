@@ -133,9 +133,6 @@ function Navbar() {
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-              <MenuItem disabled sx={{ opacity: 1, fontWeight: 700 }}>
-                {accountLabel}
-              </MenuItem>
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
           </Box>
