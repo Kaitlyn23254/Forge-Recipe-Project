@@ -27,9 +27,8 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import "../styles/Recipes.css";
+import { API_BASE_URL as BACKEND_BASE_URL } from "../utility/api";
 import { getStoredUser } from "../utility/auth";
-
-const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
 
@@ -135,10 +134,14 @@ export default function Recipes() {
   const { uid: userId } = getStoredUser() ?? {};
 
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
     async function fetchBookmarkedIds() {
       try {
         const response = await axios.get(
-          `${BASE_URL}/users/${userId}/bookmarks/ids`,
+          `${BACKEND_BASE_URL}/users/${userId}/bookmarks/ids`,
         );
         setBookmarkedRecipeIds(
           new Set(Array.isArray(response.data) ? response.data : []),
@@ -164,14 +167,14 @@ export default function Recipes() {
     const isCurrentlyBookmarked = bookmarkedRecipeIds.has(recipeId);
 
     if (isCurrentlyBookmarked) {
-      await axios.delete(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
+      await axios.delete(`${BACKEND_BASE_URL}/users/${userId}/bookmarks/${recipeId}`);
       setBookmarkedRecipeIds((previousIds) => {
         const updatedIds = new Set(previousIds);
         updatedIds.delete(recipeId);
         return updatedIds;
       });
     } else {
-      await axios.post(`${BASE_URL}/users/${userId}/bookmarks/${recipeId}`, {
+      await axios.post(`${BACKEND_BASE_URL}/users/${userId}/bookmarks/${recipeId}`, {
         recipeType: "official",
       });
       setBookmarkedRecipeIds(
@@ -813,32 +816,38 @@ export default function Recipes() {
           <Box className="recipes-page__grid">
             {recipes.map((card) => (
               <Card key={card.id} elevation={0} className="recipes-page__card">
-                <CardActionArea
-                  className="recipes-page__card-action"
-                  data-recipe-id={card.id}
-                  onClick={handleCardClick}
-                >
-                  <CardContent className="recipes-page__card-content">
-                    <Box className="recipes-page__card-image-wrapper">
+                <CardContent className="recipes-page__card-content">
+                  <Box className="recipes-page__card-image-wrapper">
+                    <CardActionArea
+                      className="recipes-page__card-action"
+                      data-recipe-id={card.id}
+                      onClick={handleCardClick}
+                    >
                       <Box
                         component="img"
                         src={card.image}
                         alt={card.title}
                         className="recipes-page__card-image"
                       />
-                      <IconButton
-                        className="recipes-page__card-bookmark-btn"
-                        data-recipe-id={card.id}
-                        onClick={handleBookmarkToggle}
-                      >
-                        {bookmarkedRecipeIds.has(card.id) ? (
-                          <BookmarkIcon fontSize="small" />
-                        ) : (
-                          <BookmarkBorderIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </Box>
+                    </CardActionArea>
+                    <IconButton
+                      className="recipes-page__card-bookmark-btn"
+                      data-recipe-id={card.id}
+                      onClick={handleBookmarkToggle}
+                    >
+                      {bookmarkedRecipeIds.has(card.id) ? (
+                        <BookmarkIcon fontSize="small" />
+                      ) : (
+                        <BookmarkBorderIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Box>
 
+                  <CardActionArea
+                    className="recipes-page__card-action"
+                    data-recipe-id={card.id}
+                    onClick={handleCardClick}
+                  >
                     <Box className="recipes-page__card-meta">
                       <Chip
                         label={card.source}
@@ -869,8 +878,8 @@ export default function Recipes() {
                         {card.description}
                       </Typography>
                     </Box>
-                  </CardContent>
-                </CardActionArea>
+                  </CardActionArea>
+                </CardContent>
               </Card>
             ))}
           </Box>

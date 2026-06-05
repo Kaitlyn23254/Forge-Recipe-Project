@@ -14,9 +14,8 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import { API_BASE_URL } from "../utility/api.js";
 import { setStoredUser } from "../utility/auth.js";
-
-const API_BASE_URL = "http://localhost:5005";
 
 function Login() {
   const navigate = useNavigate();

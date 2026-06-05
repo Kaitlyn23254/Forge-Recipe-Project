@@ -23,9 +23,10 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteConfirmDialog from "../components/DeleteConfirmDialog";
 import "../styles/MyRecipes.css";
+import { API_BASE_URL } from "../utility/api";
 import { getStoredUser } from "../utility/auth";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = API_BASE_URL;
 
 function resolveRecipeSource(recipe) {
   return recipe.recipeType === "official" ? "official" : "community";
@@ -271,14 +272,14 @@ export default function MyRecipes() {
                   elevation={0}
                   className="my-recipes-page__card"
                 >
-                  <CardActionArea
-                    className="my-recipes-page__card-action"
-                    data-recipe-id={recipe.id}
-                    data-recipe-source={recipeSource}
-                    onClick={handleCardClick}
-                  >
-                    <CardContent className="my-recipes-page__card-content">
-                      <Box className="my-recipes-page__card-image-wrapper">
+                  <CardContent className="my-recipes-page__card-content">
+                    <Box className="my-recipes-page__card-image-wrapper">
+                      <CardActionArea
+                        className="my-recipes-page__card-action"
+                        data-recipe-id={recipe.id}
+                        data-recipe-source={recipeSource}
+                        onClick={handleCardClick}
+                      >
                         <Box
                           component="img"
                           src={
@@ -288,22 +289,29 @@ export default function MyRecipes() {
                           alt={recipe.title}
                           className="my-recipes-page__card-image"
                         />
-                        <IconButton
-                          size="small"
-                          className="my-recipes-page__bookmark-btn"
+                      </CardActionArea>
+                      <IconButton
+                        size="small"
+                        className="my-recipes-page__bookmark-btn"
+                        data-recipe-id={recipe.id}
+                        data-recipe-type={recipeSource}
+                        onClick={handleBookmarkClick}
+                      >
+                        {bookmarkedRecipeIds.has(recipe.id) ? (
+                          <BookmarkIcon fontSize="small" />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Box>
+                    <Box className="my-recipes-page__card-body">
+                      <Box className="my-recipes-page__card-title-row">
+                        <CardActionArea
+                          className="my-recipes-page__card-action"
                           data-recipe-id={recipe.id}
-                          data-recipe-type={recipeSource}
-                          onClick={handleBookmarkClick}
+                          data-recipe-source={recipeSource}
+                          onClick={handleCardClick}
                         >
-                          {bookmarkedRecipeIds.has(recipe.id) ? (
-                            <BookmarkIcon fontSize="small" />
-                          ) : (
-                            <BookmarkBorderIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Box>
-                      <Box className="my-recipes-page__card-body">
-                        <Box className="my-recipes-page__card-title-row">
                           <Typography
                             variant="h6"
                             component="h2"
@@ -311,18 +319,25 @@ export default function MyRecipes() {
                           >
                             {recipe.title}
                           </Typography>
-                          {activeTab === "created" && (
-                            <IconButton
-                              size="small"
-                              className="my-recipes-page__menu-btn"
-                              data-recipe-id={recipe.id}
-                              onClick={handleOpenMenu}
-                            >
-                              <MoreVertIcon fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Box>
-                        {recipe.cookingTime && (
+                        </CardActionArea>
+                        {activeTab === "created" ? (
+                          <IconButton
+                            size="small"
+                            className="my-recipes-page__menu-btn"
+                            data-recipe-id={recipe.id}
+                            onClick={handleOpenMenu}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        ) : null}
+                      </Box>
+                      {recipe.cookingTime ? (
+                        <CardActionArea
+                          className="my-recipes-page__card-action"
+                          data-recipe-id={recipe.id}
+                          data-recipe-source={recipeSource}
+                          onClick={handleCardClick}
+                        >
                           <Box className="my-recipes-page__card-time">
                             <AccessTimeIcon className="my-recipes-page__card-time-icon" />
                             <Typography
@@ -332,10 +347,10 @@ export default function MyRecipes() {
                               {recipe.cookingTime}
                             </Typography>
                           </Box>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </CardActionArea>
+                        </CardActionArea>
+                      ) : null}
+                    </Box>
+                  </CardContent>
                 </Card>
               );
             })}

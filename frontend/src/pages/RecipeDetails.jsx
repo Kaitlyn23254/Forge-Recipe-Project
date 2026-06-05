@@ -10,6 +10,7 @@ import Rating from "@mui/material/Rating";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
+import { API_BASE_URL } from "../utility/api";
 import { timestampToString } from "../utility/timestampToString";
 import { getStoredUser } from "../utility/auth";
 
@@ -53,7 +54,7 @@ export default function RecipeDetails() {
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/recipes/${recipeId}`,
+        `${API_BASE_URL}/recipes/${recipeId}`,
         { params: { source } },
       );
       setRecipe(response.data);
@@ -71,7 +72,7 @@ export default function RecipeDetails() {
 
   const loadRepliesForComment = async (commentId) => {
     const response = await axios.get(
-      `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies`,
+      `${API_BASE_URL}/comments/${commentId}/replies`,
       { params: { userId } },
     );
 
@@ -83,7 +84,7 @@ export default function RecipeDetails() {
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/comments/${recipeId}`,
+        `${API_BASE_URL}/comments/${recipeId}`,
         { params: { userId } },
       );
 
@@ -113,7 +114,7 @@ export default function RecipeDetails() {
       }
 
       const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/comments`,
+        `${API_BASE_URL}/comments`,
         payload,
       );
 
@@ -158,12 +159,12 @@ export default function RecipeDetails() {
   }, [recipeId, source, fetchRecipe, fetchCommentsWithReplies]);
 
   useEffect(() => {
-    if (!recipeId) return;
+    if (!recipeId || !userId) return;
 
     async function fetchSavedStatus() {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BASE_URL}/users/${userId}/bookmarks/ids`,
+          `${API_BASE_URL}/users/${userId}/bookmarks/ids`,
         );
         const bookmarkedIds = Array.isArray(response.data) ? response.data : [];
         setIsSaved(bookmarkedIds.includes(recipeId));
@@ -173,12 +174,12 @@ export default function RecipeDetails() {
     }
 
     fetchSavedStatus();
-  }, [recipeId]);
+  }, [recipeId, userId]);
 
   const handleReplySubmit = async (commentId, text) => {
     try {
       await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies`,
+        `${API_BASE_URL}/comments/${commentId}/replies`,
         { commentId, userId, text },
       );
 
@@ -197,7 +198,7 @@ export default function RecipeDetails() {
   const handleReplyLike = async (commentId, replyId) => {
     try {
       const postResp = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies/${replyId}/like`,
+        `${API_BASE_URL}/comments/${commentId}/replies/${replyId}/like`,
         { userId },
       );
 
@@ -223,7 +224,7 @@ export default function RecipeDetails() {
   const handleReplyEdit = async (commentId, replyId, text) => {
     try {
       const resp = await axios.patch(
-        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies/${replyId}`,
+        `${API_BASE_URL}/comments/${commentId}/replies/${replyId}`,
         { userId, text },
       );
 
@@ -249,7 +250,7 @@ export default function RecipeDetails() {
   const handleReplyDelete = async (commentId, replyId) => {
     try {
       await axios.delete(
-        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/replies/${replyId}`,
+        `${API_BASE_URL}/comments/${commentId}/replies/${replyId}`,
         { data: { userId } },
       );
 
@@ -273,7 +274,7 @@ export default function RecipeDetails() {
   const handleCommentLike = async (commentId) => {
     try {
       const postResp = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/comments/${commentId}/like`,
+        `${API_BASE_URL}/comments/${commentId}/like`,
         { userId },
       );
 
@@ -299,12 +300,12 @@ export default function RecipeDetails() {
     try {
       if (previousSaved) {
         await axios.delete(
-          `${import.meta.env.VITE_BASE_URL}/users/${userId}/bookmarks/${recipeId}`,
+          `${API_BASE_URL}/users/${userId}/bookmarks/${recipeId}`,
         );
         setIsSaved(false);
       } else {
         await axios.post(
-          `${import.meta.env.VITE_BASE_URL}/users/${userId}/bookmarks/${recipeId}`,
+          `${API_BASE_URL}/users/${userId}/bookmarks/${recipeId}`,
           { recipeType },
         );
         setIsSaved(true);
@@ -368,21 +369,15 @@ export default function RecipeDetails() {
               <div className="recipe-details-header-text">
                 <div className="recipe-details-header-title-row">
                   <h1 className="recipe-details-title">{recipeTitle}</h1>
-                  {isSaved ? (
-                    <BookmarkIcon
-                      className="recipe-details-save-icon"
-                      onClick={handleSaveRecipe}
-                      role="button"
-                      aria-label="Remove saved recipe"
-                    />
-                  ) : (
-                    <BookmarkBorderIcon
-                      className="recipe-details-save-icon"
-                      onClick={handleSaveRecipe}
-                      role="button"
-                      aria-label="Save recipe"
-                    />
-                  )}
+                  <IconButton
+                    className="recipe-details-save-icon"
+                    onClick={handleSaveRecipe}
+                    aria-label={
+                      isSaved ? "Remove saved recipe" : "Save recipe"
+                    }
+                  >
+                    {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                  </IconButton>
                 </div>
                 <h4 className="recipe-details-tags">{recipeTags}</h4>
                 <div className="recipe-details-average-rating">
@@ -463,7 +458,7 @@ export default function RecipeDetails() {
                       onCommentEdit={async (commentId, newText) => {
                         try {
                           const resp = await axios.patch(
-                            `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                            `${API_BASE_URL}/comments/${commentId}`,
                             { userId, text: newText },
                           );
 
@@ -483,7 +478,7 @@ export default function RecipeDetails() {
                       onCommentDelete={async (commentId) => {
                         try {
                           await axios.delete(
-                            `${import.meta.env.VITE_BASE_URL}/comments/${commentId}`,
+                            `${API_BASE_URL}/comments/${commentId}`,
                             { data: { userId } },
                           );
 

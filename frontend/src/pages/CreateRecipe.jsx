@@ -12,11 +12,12 @@ import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import StepField from "../components/StepField";
 import IngredientRow from "../components/IngredientRow";
+import { API_BASE_URL } from "../utility/api";
 import buildRecipeFormData from "../utility/buildRecipeFormData";
 import "../styles/CreateRecipe.css";
 import { getStoredUser } from "../utility/auth";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = API_BASE_URL;
 
 export default function CreateRecipe() {
   const navigate = useNavigate();

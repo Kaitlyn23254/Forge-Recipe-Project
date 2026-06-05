@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import { API_BASE_URL } from "../utility/api";
 import ChatMessage from "./ChatMessage";
 
 import "./styles/ChatBox.css";
@@ -30,7 +31,7 @@ export default function ChatBox({
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/chat`,
+        `${API_BASE_URL}/chat`,
         {
           messages: nextMessages,
           recipeInstructions,
