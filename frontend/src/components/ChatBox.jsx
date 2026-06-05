@@ -16,6 +16,7 @@ export default function ChatBox({
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,12 +25,14 @@ export default function ChatBox({
     const newMessage = inputText.trim();
 
     if (!newMessage) {
+      setLoading(false);
       return;
     }
 
     const nextMessages = [...messages, { role: "user", content: newMessage }];
 
     try {
+      setError("");
       const response = await axios.post(
         `${API_BASE_URL}/chat`,
         {
@@ -51,6 +54,10 @@ export default function ChatBox({
       setInputText("");
     } catch (err) {
       console.error("Error making request on frontend: ", err);
+      const message =
+        err.response?.data?.error ||
+        "Unable to reach the cooking assistant right now.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -70,6 +77,8 @@ export default function ChatBox({
           />
         ))}
       </div>
+
+      {error ? <p className="chat-box__error">{error}</p> : null}
 
       <form className="chat-box__form" onSubmit={handleSubmit}>
         <input
