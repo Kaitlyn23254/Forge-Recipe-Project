@@ -23,12 +23,37 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteConfirmDialog from "../components/DeleteConfirmDialog";
 import "../styles/MyRecipes.css";
+import { API_BASE_URL } from "../utility/api";
 import { getStoredUser } from "../utility/auth";
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = API_BASE_URL;
+
+const RECIPE_STATUS_LABELS = {
+  pending: "Pending Review",
+  approved: "Approved",
+  rejected: "Rejected",
+};
+
+const RECIPE_STATUS_DESCRIPTIONS = {
+  pending: "Awaiting admin approval",
+  approved: "Published and visible to everyone",
+  rejected: "Not approved — edit and resubmit",
+};
 
 function resolveRecipeSource(recipe) {
   return recipe.recipeType === "official" ? "official" : "community";
+}
+
+function RecipeStatusChip({ status }) {
+  const resolvedStatus = status || "pending";
+
+  return (
+    <Chip
+      label={RECIPE_STATUS_LABELS[resolvedStatus] || "Pending Review"}
+      size="small"
+      className={`my-recipes-page__status-chip my-recipes-page__status-chip--${resolvedStatus}`}
+    />
+  );
 }
 
 export default function MyRecipes() {
@@ -271,14 +296,14 @@ export default function MyRecipes() {
                   elevation={0}
                   className="my-recipes-page__card"
                 >
-                  <CardActionArea
-                    className="my-recipes-page__card-action"
-                    data-recipe-id={recipe.id}
-                    data-recipe-source={recipeSource}
-                    onClick={handleCardClick}
-                  >
-                    <CardContent className="my-recipes-page__card-content">
-                      <Box className="my-recipes-page__card-image-wrapper">
+                  <CardContent className="my-recipes-page__card-content">
+                    <Box className="my-recipes-page__card-image-wrapper">
+                      <CardActionArea
+                        className="my-recipes-page__card-action"
+                        data-recipe-id={recipe.id}
+                        data-recipe-source={recipeSource}
+                        onClick={handleCardClick}
+                      >
                         <Box
                           component="img"
                           src={
@@ -288,22 +313,29 @@ export default function MyRecipes() {
                           alt={recipe.title}
                           className="my-recipes-page__card-image"
                         />
-                        <IconButton
-                          size="small"
-                          className="my-recipes-page__bookmark-btn"
+                      </CardActionArea>
+                      <IconButton
+                        size="small"
+                        className="my-recipes-page__bookmark-btn"
+                        data-recipe-id={recipe.id}
+                        data-recipe-type={recipeSource}
+                        onClick={handleBookmarkClick}
+                      >
+                        {bookmarkedRecipeIds.has(recipe.id) ? (
+                          <BookmarkIcon fontSize="small" />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Box>
+                    <Box className="my-recipes-page__card-body">
+                      <Box className="my-recipes-page__card-title-row">
+                        <CardActionArea
+                          className="my-recipes-page__card-action"
                           data-recipe-id={recipe.id}
-                          data-recipe-type={recipeSource}
-                          onClick={handleBookmarkClick}
+                          data-recipe-source={recipeSource}
+                          onClick={handleCardClick}
                         >
-                          {bookmarkedRecipeIds.has(recipe.id) ? (
-                            <BookmarkIcon fontSize="small" />
-                          ) : (
-                            <BookmarkBorderIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Box>
-                      <Box className="my-recipes-page__card-body">
-                        <Box className="my-recipes-page__card-title-row">
                           <Typography
                             variant="h6"
                             component="h2"
@@ -311,18 +343,40 @@ export default function MyRecipes() {
                           >
                             {recipe.title}
                           </Typography>
-                          {activeTab === "created" && (
-                            <IconButton
-                              size="small"
-                              className="my-recipes-page__menu-btn"
-                              data-recipe-id={recipe.id}
-                              onClick={handleOpenMenu}
-                            >
-                              <MoreVertIcon fontSize="small" />
-                            </IconButton>
-                          )}
+                        </CardActionArea>
+                        {activeTab === "created" ? (
+                          <IconButton
+                            size="small"
+                            className="my-recipes-page__menu-btn"
+                            data-recipe-id={recipe.id}
+                            onClick={handleOpenMenu}
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        ) : null}
+                      </Box>
+                      {activeTab === "created" ? (
+                        <Box className="my-recipes-page__card-status">
+                          <RecipeStatusChip status={recipe.status} />
+                          <Typography
+                            variant="caption"
+                            className="my-recipes-page__card-status-text"
+                          >
+                            {
+                              RECIPE_STATUS_DESCRIPTIONS[
+                                recipe.status || "pending"
+                              ]
+                            }
+                          </Typography>
                         </Box>
-                        {recipe.cookingTime && (
+                      ) : null}
+                      {recipe.cookingTime ? (
+                        <CardActionArea
+                          className="my-recipes-page__card-action"
+                          data-recipe-id={recipe.id}
+                          data-recipe-source={recipeSource}
+                          onClick={handleCardClick}
+                        >
                           <Box className="my-recipes-page__card-time">
                             <AccessTimeIcon className="my-recipes-page__card-time-icon" />
                             <Typography
@@ -332,10 +386,10 @@ export default function MyRecipes() {
                               {recipe.cookingTime}
                             </Typography>
                           </Box>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </CardActionArea>
+                        </CardActionArea>
+                      ) : null}
+                    </Box>
+                  </CardContent>
                 </Card>
               );
             })}

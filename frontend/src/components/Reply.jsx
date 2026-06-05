@@ -69,12 +69,14 @@ export default function Reply({
               <>
                 <button
                   className="reply-edit"
+                  type="button"
                   onClick={() => setIsEditing(true)}
                 >
                   Edit
                 </button>
                 <button
                   className="reply-delete"
+                  type="button"
                   onClick={() => handleReplyDelete(id)}
                 >
                   Delete

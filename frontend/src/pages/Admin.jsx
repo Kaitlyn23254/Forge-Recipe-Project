@@ -21,9 +21,8 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import PeopleOutlinedIcon from "@mui/icons-material/PeopleOutlined";
 import SearchIcon from "@mui/icons-material/Search";
+import { API_BASE_URL } from "../utility/api";
 import "../styles/Admin.css";
-
-const API_BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5005";
 const SEARCH_DEBOUNCE_MS = 300;
 
 const SUMMARY_CARDS = [

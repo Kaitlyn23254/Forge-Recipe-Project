@@ -35,7 +35,17 @@ router.post("/", async (req, res) => {
     return res.status(200).json({ output_text: response.output_text });
   } catch (err) {
     console.error("Error fetching openai response: ", err);
-    return res.status(500).send("Error fetching from OpenAI API");
+
+    if (err.status === 401 || err.code === "invalid_api_key") {
+      return res.status(503).json({
+        error:
+          "Chatbot unavailable: invalid OpenAI API key. Update OPENAI_API_KEY in backend/.env.",
+      });
+    }
+
+    return res.status(500).json({
+      error: err.message || "Unable to fetch a response from the cooking assistant.",
+    });
   }
 });
 

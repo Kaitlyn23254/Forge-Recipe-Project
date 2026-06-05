@@ -200,6 +200,8 @@ function normalizeFirestoreRecipe(recipeId, data) {
     ratingCount: data.ratingCount ?? 0,
     youtube: data.youtube ?? "",
     sourceUrl: data.sourceUrl ?? "",
+    status: allowedStatuses.has(data.status) ? data.status : "pending",
+    createdBy: data.createdBy ?? "",
   };
 }
 

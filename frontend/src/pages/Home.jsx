@@ -127,6 +127,7 @@ function Home() {
               {featuredRecipes.map((recipe) => (
                 <RecipePreview
                   key={recipe.idMeal}
+                  id={recipe.idMeal}
                   title={recipe.strMeal}
                   image={recipe.strMealThumb}
                 />
@@ -211,7 +212,7 @@ function Home() {
 }
 
 
-function RecipePreview({ title, image }) {
+function RecipePreview({ id, title, image }) {
   return (
     <Box
       sx={{
@@ -240,7 +241,7 @@ function RecipePreview({ title, image }) {
 
       <Button
         component={Link}
-        to="/recipes"
+        to={`/recipes/${id}?source=official`}
         size="small"
         sx={{ color: "#1F6F78", fontWeight: "bold" }}
       >

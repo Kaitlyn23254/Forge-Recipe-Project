@@ -74,9 +74,10 @@ router.get("/:recipeId", async function (req, res) {
 
 // POST /recipes — create a new recipe (multipart/form-data)
 router.post("/", multerMemoryUpload.single("image"), async (req, res) => {
-  const { userId, title, description, cookingTime } = req.body;
+  const { userId, title, description, cookingTime, imageUrl } = req.body;
   const recipeSteps = parseJsonField(req.body.steps);
   const recipeIngredients = parseJsonField(req.body.ingredients);
+  const imageUrlFromBody = String(imageUrl || "").trim();
 
   const createdRecipe = await createRecipe({
     userId,
@@ -85,20 +86,20 @@ router.post("/", multerMemoryUpload.single("image"), async (req, res) => {
     steps: recipeSteps || [],
     cookingTime,
     ingredients: recipeIngredients || [],
-    imageUrl: "",
+    imageUrl: imageUrlFromBody,
   });
 
-  let imageDownloadUrl = "";
+  let finalImageUrl = imageUrlFromBody;
   if (req.file) {
-    imageDownloadUrl = await uploadRecipeImage(req.file, createdRecipe.id);
+    finalImageUrl = await uploadRecipeImage(req.file, createdRecipe.id);
     await updateRecipe({
       recipeId: createdRecipe.id,
       userId,
-      imageUrl: imageDownloadUrl,
+      imageUrl: finalImageUrl,
     });
   }
 
-  res.status(201).json({ ...createdRecipe, imageUrl: imageDownloadUrl });
+  res.status(201).json({ ...createdRecipe, imageUrl: finalImageUrl });
 });
 
 // PATCH /recipes/:recipeId — edit a recipe (multipart/form-data, image optional)
@@ -107,13 +108,15 @@ router.patch(
   multerMemoryUpload.single("image"),
   async (req, res) => {
     const { recipeId } = req.params;
-    const { userId, title, description, cookingTime } = req.body;
+    const { userId, title, description, cookingTime, imageUrl } = req.body;
     const recipeSteps = parseJsonField(req.body.steps);
     const recipeIngredients = parseJsonField(req.body.ingredients);
 
-    let imageDownloadUrl;
+    let finalImageUrl;
     if (req.file) {
-      imageDownloadUrl = await uploadRecipeImage(req.file, recipeId);
+      finalImageUrl = await uploadRecipeImage(req.file, recipeId);
+    } else if (imageUrl !== undefined) {
+      finalImageUrl = String(imageUrl).trim();
     }
 
     const updatedRecipe = await updateRecipe({
@@ -124,7 +127,7 @@ router.patch(
       steps: recipeSteps,
       cookingTime,
       ingredients: recipeIngredients,
-      imageUrl: imageDownloadUrl,
+      imageUrl: finalImageUrl,
     });
 
     res.json(updatedRecipe);

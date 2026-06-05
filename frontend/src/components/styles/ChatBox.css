@@ -26,6 +26,16 @@
   margin-bottom: 16px;
 }
 
+.chat-box__error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(211, 47, 47, 0.08);
+  color: #b42318;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .chat-box__form {
   display: flex;
   gap: 12px;

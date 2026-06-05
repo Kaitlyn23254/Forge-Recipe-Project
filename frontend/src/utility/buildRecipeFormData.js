@@ -5,6 +5,7 @@ export default function buildRecipeFormData({
   recipeSteps,
   cookingTime,
   recipeIngredients,
+  imageUrl,
   selectedImageFile,
 }) {
   const formData = new FormData();
@@ -17,6 +18,9 @@ export default function buildRecipeFormData({
     "ingredients",
     JSON.stringify(recipeIngredients.filter((ingredient) => ingredient.name.trim())),
   );
+  if (imageUrl?.trim()) {
+    formData.append("imageUrl", imageUrl.trim());
+  }
   if (selectedImageFile) {
     formData.append("image", selectedImageFile);
   }
